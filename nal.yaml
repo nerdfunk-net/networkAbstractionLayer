@@ -97,7 +97,7 @@ nautobot:
 
 templates:
     default: ios
-    directory: "/Users/marc/Programming/nerdfunk/nautobot_jinja_templates/"
+    directory: "../nautobot_jinja_templates/"
     trim_blocks: True
 authentication:
     apikey: myapikey
