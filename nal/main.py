@@ -4,12 +4,12 @@ from .internal import admin
 from .routers import getconfig, getdevice
 from .auth import auth
 
+
 # start app with
 #
 # uvicorn nal.main:app --reload --port 8000
 #
 # in the upper directory
-
 app = FastAPI()
 
 app.include_router(getconfig.router)
@@ -23,6 +23,7 @@ app.include_router(
 
 @app.get("/")
 async def root():
+    print (config)
     return {'message':'Please read the docs'}
 
 @app.get("/secure")
