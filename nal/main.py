@@ -1,7 +1,8 @@
 from fastapi import Depends, FastAPI
+from fastapi.security.api_key import APIKey
 from .internal import admin
 from .routers import getconfig, getdevice
-
+from .auth import auth
 
 # start app with
 #
@@ -24,3 +25,8 @@ app.include_router(
 async def root():
     return {'message':'Please read the docs'}
 
+@app.get("/secure")
+async def info(api_key: APIKey = Depends(auth.get_api_key)):
+    return {
+        "default variable": api_key
+    }
