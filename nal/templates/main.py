@@ -1,7 +1,28 @@
 import jinja2
 from ..config.main import readConfig
 
+def getSection(config, section):
+    result = ""
+    active = False
+    was_active = False
 
+    lines = config.split('\n')
+    for line in lines:
+        # check if section ends
+        if (active):
+            if not line.startswith(' '):
+                active = False
+                was_active = True
+        # check if section starts
+        if line.startswith(section):
+            active = True
+            if section == 'interface':
+                result = result + '\n'
+        # print line if section is still active
+        if (active):
+            result = result + line + '\n'
+
+    return result
 def getIntendedConfig(device, device_config):
 
     """

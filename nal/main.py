@@ -23,7 +23,6 @@ app.include_router(
 
 @app.get("/")
 async def root():
-    print (config)
     return {'message':'Please read the docs'}
 
 @app.get("/secure")
