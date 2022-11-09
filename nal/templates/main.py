@@ -1,7 +1,20 @@
 import jinja2
 from ..config.main import readConfig
 
+
+additional_newline = ["interface"]
+
 def getSection(config, section):
+    """
+    returns specified section of rendered config
+    Args:
+        config: rendered config
+        section: name of section to look at
+
+    Returns:
+        specified section as string
+    """
+
     result = ""
     active = False
     was_active = False
@@ -16,7 +29,7 @@ def getSection(config, section):
         # check if section starts
         if line.startswith(section):
             active = True
-            if section == 'interface':
+            if section in additional_newline:
                 result = result + '\n'
         # print line if section is still active
         if (active):
