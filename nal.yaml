@@ -95,9 +95,19 @@ nautobot:
           }
         }
 
-    ipaddress: >
+    all_ipaddress: >
         query {
           devices(name: "") {
+            hostname: name
+            primary_ip4 {
+              address
+            }
+          }
+        }
+
+    all_ipaddress_by_name: >
+        query ($device_name:[String]) {
+          devices(name: $device_name) {
             hostname: name
             primary_ip4 {
               address

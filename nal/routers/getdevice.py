@@ -11,8 +11,16 @@ router = APIRouter(
 )
 
 @router.get("/ip", tags=["getconfig"])
-async def get_device(request: Request):
-    return get_graph_ql('ipaddress')
+async def get_ip_of_devices(request: Request):
+
+    if request.query_params:
+        request_args = dict(request.query_params)
+        data = get_graph_ql('all_ipaddress_by_name', request_args)
+        print (request_args)
+        print (data)
+        return data
+    else:
+        return get_graph_ql('all_ipaddress')
 
 @router.get("/{device}", tags=["getconfig"])
 async def get_device(device: str):
