@@ -98,6 +98,7 @@ def get_intended_config (device, query='intended_config'):
 def get_graph_ql (query, variables = {}):
     config = readConfig()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    print (">>> %s" % variables)
     return nb.graphql.query(
         query=config['nautobot'][query],
         variables=variables).json
