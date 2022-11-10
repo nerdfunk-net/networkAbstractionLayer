@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from enum import Enum
-from ..nautobot.main import getGraphQL
-from ..templates.main import getIntendedConfig, getSection
+from ..nautobot.main import get_intended_config
+from ..templates.main import renderIntendedConfig, getSection
 
 
 # define router
@@ -56,10 +56,10 @@ async def get_config(device: str, mode: ModelMode, section: str):
 def get_config(device, mode, section):
 
     result = {}
-    device_config = getGraphQL(device)
+    device_config = get_intended_config(device, 'intended_config')
     result['device'] = device
     if mode == 'intended':
-        rendered_config = getIntendedConfig(device, device_config)
+        rendered_config = renderIntendedConfig(device, device_config)
     elif mode == 'current':
         result['config'] = "current"
     elif mode == "backup":

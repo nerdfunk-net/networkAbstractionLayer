@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi import FastAPI, Request
 from ..nautobot.main import getDevices
+from ..nautobot.main import get_graph_ql
+
 
 router = APIRouter(
     prefix="/getdevice",
@@ -8,8 +10,31 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+@router.get("/ip", tags=["getconfig"])
+async def get_device(request: Request):
+    return get_graph_ql('ipaddress')
 
-@router.get("/")
+@router.get("/{device}", tags=["getconfig"])
+async def get_device(device: str):
+    """
+    returns json of specified device
+    Args:
+        device: name of device
+
+    Returns:
+        json
+    """
+
+    result = {}
+    result['filter'] = {'name':device}
+    result['count'] = 0  # default if no match
+    data = getDevices({'name':device})
+    if data:
+        result['count'] = len(data)
+        result['result'] = data
+        return result
+
+@router.get("/", tags=["getconfig"])
 async def get_device(request: Request):
     """
     returns device<p>
@@ -24,12 +49,16 @@ async def get_device(request: Request):
         the device as json
     """
     request_args = dict(request.query_params)
+    result = {}
+    result['filter'] = request_args
+    result['count'] = 0  # default if no match
+
     if request_args:
-        result = {}
-        result['filter'] = request_args
-        result['count'] = 0  # default if no match
         data = getDevices(request_args)
-        if data:
+    else:
+        data = getDevices({'name': ''})
+
+    if data:
             result['count'] = len(data)
             result['result'] = data
             return result

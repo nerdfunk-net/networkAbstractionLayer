@@ -48,13 +48,12 @@ def getSite (filter, r_type="object"):
 
     return nb_site
 
-def getDevices (filter, r_type="object"):
+def getDevices (filter):
     """
     gets data of one or multiple devices depending on a filter
 
     Args:
         filter:
-        r_type:
 
     Returns:
         json/object with device
@@ -64,24 +63,18 @@ def getDevices (filter, r_type="object"):
     nb.http_session.verify = False
 
     nb_device = nb.dcim.devices.filter(**filter)
-    if r_type == 'json':
-        return objectToJson(nb_device)
+    return nb_device
 
-    if nb_device:
-        return nb_device
-    else:
-        return
-
-def getDevice (device, r_type="object"):
+def getDevice (device):
     """
     get the data of a single device using its slug
     """
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     nb.http_session.verify = False
 
-    return getDevices({'name':device}, r_type)
+    return getDevices({'name':device})
 
-def getGraphQL (device):
+def get_intended_config (device, query='intended_config'):
 
     """
     Returns result of the specified graphQL query
@@ -97,17 +90,14 @@ def getGraphQL (device):
         id = nb.dcim.devices.get(name=device).id
         variables = {"device_id": id}
         return nb.graphql.query(
-            query=config['nautobot']['configquery'],
+            query=config['nautobot'][query],
             variables=variables).json
     else:
         return {'error': True, 'reason':'unknown device'}
 
-"""
-     # device_type:
-     #     model fuer slug
-     #     device_type_id fuer die id
-     # device_role:
-     #     role fuer slug
-     #     role_id fuer id
-
-"""
+def get_graph_ql (query, variables = {}):
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    return nb.graphql.query(
+        query=config['nautobot'][query],
+        variables=variables).json

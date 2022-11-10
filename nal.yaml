@@ -4,7 +4,7 @@ nautobot:
     user: admin
     password: admin
     token: 18acb72f4f8df7d5b939492edaebc88a0992640d
-    configquery: >
+    intended_config: >
         query ($device_id: ID!) {
           device(id: $device_id) {
             config_context
@@ -91,6 +91,16 @@ nautobot:
               member_interfaces {
                 name
               }
+            }
+          }
+        }
+
+    ipaddress: >
+        query {
+          devices(name: "") {
+            hostname: name
+            primary_ip4 {
+              address
             }
           }
         }

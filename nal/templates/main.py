@@ -36,7 +36,7 @@ def getSection(config, section):
             result = result + line + '\n'
 
     return result
-def getIntendedConfig(device, device_config):
+def renderIntendedConfig(device, device_config):
 
     """
 
@@ -51,7 +51,7 @@ def getIntendedConfig(device, device_config):
 
     # set default values
     config = readConfig()
-    # if not platform is set we use the default platform
+    # if platform is not set we use the default platform
     device_platform = config['templates']['default']
     if 'platform' in device_config['data']['device']:
         device_platform = device_config['data']['device']['platform']['slug']
