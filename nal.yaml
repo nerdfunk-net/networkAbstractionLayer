@@ -95,19 +95,25 @@ nautobot:
           }
         }
 
-    all_ipaddress: >
-        query {
-          devices(name: "") {
+    ipaddress_by_name_site_role_long: >
+        query ($name:[String], $site:[String], $role:[String]) {
+          devices(name: $name, site: $site, role: $role) {
             hostname: name
+            site {
+              slug
+            }
+            device_role {
+              slug
+            }
             primary_ip4 {
               address
             }
           }
         }
 
-    all_ipaddress_by_name: >
-        query ($device_name:[String]) {
-          devices(name: $device_name) {
+    ipaddress_by_name_site_role_summary: >
+        query ($name:[String], $site:[String], $role:[String]) {
+          devices(name: $name, site: $site, role: $role) {
             hostname: name
             primary_ip4 {
               address
