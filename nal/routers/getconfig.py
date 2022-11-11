@@ -12,13 +12,13 @@ router = APIRouter(
 )
 
 # which mode do we accept
-class ModelMode(str, Enum):
+class SourceMode(str, Enum):
     intended = "intended"
     current = "current"
     backup = "backup"
 
 @router.get("/diff/{device}/{old}/{new}", tags=["getconfig"])
-async def get_config_dif(device: str, old: ModelMode, new: ModelMode):
+async def get_config_dif(device: str, old: SourceMode, new: SourceMode):
     """
     returns diff between two configs
     Args:
@@ -42,7 +42,7 @@ async def get_full_intended_config(device: str):
     """
     return get_config(device, "intended", "")
 
-@router.get("/{device}/{mode}", tags=["getconfig"])
+@router.get("/{device}/{source}", tags=["getconfig"])
 async def get_full_config(device: str):
     """
     returns full intended config of the device<p>
@@ -52,10 +52,10 @@ async def get_full_config(device: str):
     Returns:
         json containing the config
     """
-    return get_config(device, mode.value, "")
+    return get_config(device, source.value, "")
 
-@router.get("/{device}/{mode}/{section}", tags=["getconfig"])
-async def get_config_of_section(device: str, mode: ModelMode, section: str):
+@router.get("/{device}/{source}/{section}", tags=["getconfig"])
+async def get_config_of_section(device: str, source: SourceMode, section: str):
     """
     returns config of the device<p>
     Args:
@@ -65,20 +65,20 @@ async def get_config_of_section(device: str, mode: ModelMode, section: str):
     Returns:
         json containing the config
     """
-    return get_config(device, mode.value, section)
+    return get_config(device, source.value, section)
 
-def get_config(device, mode, section=""):
+def get_config(device, source, section=""):
 
     result = {}
     result['device'] = device
-    result['mode'] = mode
+    result['source'] = source
 
-    if mode == 'intended':
+    if source == 'intended':
         device_config = get_intended_config(device, 'intended_config')
         rendered_config = renderConfig(device, device_config)
-    elif mode == 'current':
+    elif source == 'current':
         rendered_config = "current"
-    elif mode == "backup":
+    elif source == "backup":
         rendered_config = "backup"
 
     if len(section) > 0:
