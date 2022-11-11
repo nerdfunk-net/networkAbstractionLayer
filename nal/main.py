@@ -5,12 +5,22 @@ from .routers import getconfig, getdevice
 from .auth import auth
 
 
+description = """
+
+The Network Abstraction Layer (nal) is the layer between our mini python apps
+and nautobot respectively our mini aps and other sources of truth
+
+"""
+
 # start app with
 #
 # uvicorn nal.main:app --reload --port 8000
 #
 # in the upper directory
-app = FastAPI()
+app = FastAPI(
+    title="Network Abstraction Layer",
+    description=description,
+    version="0.0.1",)
 
 app.include_router(getconfig.router)
 app.include_router(getdevice.router)

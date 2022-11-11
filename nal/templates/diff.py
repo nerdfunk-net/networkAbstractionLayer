@@ -7,6 +7,16 @@ from ..config.main import readConfig
 
 
 def get_diff(device, old, new):
+    """
+    compares two configs and returns diff
+    Args:
+        device: hostname
+        old: old config
+        new: new config
+
+    Returns:
+        diff of config
+    """
 
     # read nal config
     config = readConfig()

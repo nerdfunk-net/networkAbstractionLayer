@@ -55,7 +55,7 @@ async def get_full_config(device: str):
     return get_config(device, mode.value, "")
 
 @router.get("/{device}/{mode}/{section}", tags=["getconfig"])
-async def get_config(device: str, mode: ModelMode, section: str):
+async def get_config_of_section(device: str, mode: ModelMode, section: str):
     """
     returns config of the device<p>
     Args:

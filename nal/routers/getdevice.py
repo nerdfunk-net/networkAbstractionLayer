@@ -11,8 +11,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/ip", tags=["getconfig"])
+@router.get("/ip", tags=["getdevice"])
 async def get_ip_of_devices(request: Request):
+    """
+
+    Args:
+        request: nautobot filter
+
+    Returns:
+        list of IP adresses
+    """
 
     if request.query_params:
         request_args = dict(request.query_params)
@@ -21,15 +29,15 @@ async def get_ip_of_devices(request: Request):
     else:
         return get_graph_ql('ipaddress_by_name_site_role_summary', {'name':''})
 
-@router.get("/{device}", tags=["getconfig"])
+@router.get("/{device}", tags=["getdevice"])
 async def get_device(device: str, query: str | None = None):
     """
-    returns json of specified device
+
     Args:
         device: name of device
 
-    Returns:
-        json
+    Returns: json of specified device
+
     """
     result = {}
     result['filter'] = {'name':device}
@@ -50,8 +58,8 @@ async def get_device(device: str, query: str | None = None):
         result['result'] = data
         return result
 
-@router.get("/", tags=["getconfig"])
-async def get_device(request: Request):
+@router.get("/", tags=["getdevice"])
+async def get_filtered_devices(request: Request):
     """
     returns device<p>
     Args:
