@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 from enum import Enum
 from ..nautobot.main import get_intended_config
-from ..templates.main import renderIntendedConfig, getSection
-
+from ..templates.main import renderConfig, getSection
+from ..templates.diff import get_diff
 
 # define router
 router = APIRouter(
@@ -17,6 +17,20 @@ class ModelMode(str, Enum):
     current = "current"
     backup = "backup"
 
+@router.get("/diff/{device}/{old}/{new}", tags=["getconfig"])
+async def get_config_dif(device: str, old: ModelMode, new: ModelMode):
+    """
+    returns diff between two configs
+    Args:
+        device: hostname
+        old: intended, backup or current
+        new: intended, backup or current
+
+    Returns:
+        diff between two configs
+    """
+    return get_diff(device, old, new)
+
 @router.get("/{device}/", tags=["getconfig"])
 async def get_full_intended_config(device: str):
     """
@@ -29,7 +43,7 @@ async def get_full_intended_config(device: str):
     return get_config(device, "intended", "")
 
 @router.get("/{device}/{mode}", tags=["getconfig"])
-async def get_full_config(device: str, mode: ModelMode):
+async def get_full_config(device: str):
     """
     returns full intended config of the device<p>
     Args:
@@ -53,17 +67,19 @@ async def get_config(device: str, mode: ModelMode, section: str):
     """
     return get_config(device, mode.value, section)
 
-def get_config(device, mode, section):
+def get_config(device, mode, section=""):
 
     result = {}
-    device_config = get_intended_config(device, 'intended_config')
     result['device'] = device
+    result['mode'] = mode
+
     if mode == 'intended':
-        rendered_config = renderIntendedConfig(device, device_config)
+        device_config = get_intended_config(device, 'intended_config')
+        rendered_config = renderConfig(device, device_config)
     elif mode == 'current':
-        result['config'] = "current"
+        rendered_config = "current"
     elif mode == "backup":
-        result['config'] = "backup"
+        rendered_config = "backup"
 
     if len(section) > 0:
         result['section'] = section
@@ -71,5 +87,4 @@ def get_config(device, mode, section):
     else:
         result['config'] = rendered_config
 
-    print (result['config'])
     return result

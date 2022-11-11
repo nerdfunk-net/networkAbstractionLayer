@@ -36,7 +36,7 @@ def getSection(config, section):
             result = result + line + '\n'
 
     return result
-def renderIntendedConfig(device, device_config):
+def renderConfig(device, device_config):
 
     """
 

@@ -127,3 +127,5 @@ templates:
     trim_blocks: True
 authentication:
     apikey: myapikey
+inventory:
+    backup_configs: "../backup_configs"
