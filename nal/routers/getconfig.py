@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from enum import Enum
-from ..nautobot.main import get_intended_config
+from ..sot.nautobot import get_intended_config
 from ..templates.main import renderConfig, getSection
 from ..templates.diff import get_diff
 

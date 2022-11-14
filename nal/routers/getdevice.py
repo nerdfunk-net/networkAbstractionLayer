@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi import FastAPI, Request
-from ..nautobot.main import getDevices
-from ..nautobot.main import get_graph_ql
-from ..nautobot.main import get_device_id
+from fastapi import APIRouter
+from fastapi import Request
+from ..sot.nautobot import getDevices, get_graph_ql, get_device_id
+
 
 
 router = APIRouter(

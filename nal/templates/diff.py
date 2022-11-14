@@ -1,8 +1,8 @@
 import difflib
 import os.path
 from ..templates.main import renderConfig
-from ..nautobot.main import get_intended_config
-from ..config.main import readConfig
+from ..sot.nautobot import get_intended_config
+from ..config.nal import readConfig
 
 
 
