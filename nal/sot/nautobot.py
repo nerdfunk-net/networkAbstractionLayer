@@ -109,21 +109,23 @@ def get_device_id(device):
     else:
         return 0
 
-def add_device(name, ipv4, site, role, type, manufacturer, status):
+def add_device(name, site, role, devicetype, manufacturer, status):
+
     """
+    adds device to nautobot
 
     Args:
         name:
-        ipv4:
         site:
         role:
-        type:
+        devicetype:
         manufacturer:
         status:
 
     Returns:
-
+        json containing result
     """
+
     config = readConfig()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
@@ -141,10 +143,10 @@ def add_device(name, ipv4, site, role, type, manufacturer, status):
         else:
             role_id = nb.dcim.device_roles.get(slug=role).id
         # check type
-        if nb.dcim.device_types.get(slug=type) == None:
+        if nb.dcim.device_types.get(slug=devicetype) == None:
             return {'status': False, 'reason': 'unknown type %s' % type}
         else:
-            type_id = nb.dcim.device_types.get(slug=type).id
+            devicetype_id = nb.dcim.device_types.get(slug=devicetype).id
         # check manufacturer
         if nb.dcim.manufacturers.get(slug=manufacturer) == None:
             return {'status': False, 'reason': 'unknown manufacturer %s' % manufacturer}
@@ -157,11 +159,93 @@ def add_device(name, ipv4, site, role, type, manufacturer, status):
                 manufacturer=manufacturer_id,
                 site=site_id,
                 device_role=role_id,
-                device_type=type_id,
+                device_type=devicetype_id,
                 status=status,
                 )
+
             return {'success': True,'message':'device %s added to sot' % name}
         except:
             return {'success': False, 'reason': 'got exception'}
     else:
         return {'success': False,'reason':'device already in sot'}
+
+def add_interface(name, interface, interfacetype):
+    """
+
+    Args:
+        name: name of device
+        interface: name of interface
+        interfacetype: interface type eg. Loopback
+
+    Returns:
+        json containing result
+    """
+
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    # get device id
+    nb_device = nb.dcim.devices.get(name=name)
+    if not nb_device:
+        return {'success': False,'reason':'unknown device'}
+
+    # check if interface is already part of device
+    nb_interface = nb.dcim.interfaces.get(
+        device_id=nb_device.id,
+        name=interface
+    )
+
+    # add interface
+    if not nb_interface:
+        try:
+            nb_interface = nb.dcim.interfaces.create(
+                device=nb_device.id,
+                name=interface,
+                type=interfacetype
+            )
+            return {'success': True, 'message': 'interface %s added to sot' % interface}
+        except:
+            return {'success': False, 'reason': 'got exception'}
+    else:
+        return {'success': False, 'reason': 'interface already in sot'}
+
+def add_address(name, interface, address):
+
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    # get device id
+    nb_device = nb.dcim.devices.get(name=name)
+    if not nb_device:
+        return {'success': False, 'reason': 'unknown device'}
+
+    # get ip address
+    nb_ipadd = nb.ipam.ip_addresses.get(
+        address=address
+    )
+
+    if nb_ipadd:
+        return {'success': False,'reason':'ip address already in sot'}
+
+    # check if interface is known
+    nb_interface = nb.dcim.interfaces.get(
+        device_id=nb_device.id,
+        name=interface
+    )
+
+    # if new address add it
+    if nb_interface:
+        try:
+            nb_ipadd = nb.ipam.ip_addresses.create(
+                address=address,
+                status='Active',
+                assigned_object_type="dcim.interface",
+                assigned_object_id=nb.dcim.interfaces.get(
+                    device=name,
+                    name=interface).id
+            )
+            return {'success': True, 'message': 'address %s added to sot' % address}
+        except:
+            return {'success': False, 'reason': 'got exception'}
+    else:
+        return {'success': False, 'reason': 'unknown interface %s' % interface}
