@@ -135,27 +135,27 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
     if not nb_device:
         # check site
         nb_site = nb.dcim.sites.get(slug=site)
-        if nb_site == None:
+        if nb_site is None:
             return {'success': False, 'reason': 'unknown site %s' % site}
 
         # check role
         nb_role = nb.dcim.device_roles.get(slug=role)
-        if nb_role == None:
+        if nb_role is None:
             return {'success': False, 'reason': 'unknown role %s' % role}
 
         # check device type
         nb_devicetype = nb.dcim.device_types.get(slug=devicetype)
-        if nb_devicetype == None:
+        if nb_devicetype is None:
             return {'success': False, 'reason': 'unknown type %s' % devicetype}
 
         # check manufacturer
         nb_manufacturer = nb.dcim.manufacturers.get(slug=manufacturer)
-        if nb_manufacturer == None:
+        if nb_manufacturer is None:
             return {'success': False, 'reason': 'unknown manufacturer %s' % manufacturer}
 
         # check platform
         nb_platform = nb.dcim.platforms.get(slug=platform)
-        if  nb_platform == None:
+        if nb_platform is None:
             return {'success': False, 'reason': 'unknown platform %s' % platform}
 
         try:
@@ -289,16 +289,10 @@ def add_vlan(vid, name, status, site):
     else:
         return {'success': False, 'reason': 'vlan already in sot'}
 
-def update_interface_values(name, interface, interface_config):
+def update_interface_values(name, interface, newconfig):
 
     config = readConfig()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    # the newconfig contains a 'config' json variable
-    try:
-        newconfig = json.loads(interface_config['config'])
-    except Exception as exc:
-        return {'success': False, 'reason': 'not a valid json config %s' % exc}
 
     # get device
     nb_device = nb.dcim.devices.get(name=name)
@@ -343,11 +337,14 @@ def update_interface_values(name, interface, interface_config):
         interface.tagged_vlans = tagged
 
     if 'tags' in newconfig:
-        try:
-            tags = [nb.extras.tags.get(name=tag).id for tag in newconfig["tags"].split(',')]
-            interface.tags = tags
-        except Exception as exc:
-            return {'success': False, 'reason': 'unknown tag found; exception: %s' % exc}
+        if newconfig['tags'] == "":
+            interface.tags = []
+        else:
+            try:
+                tags = [nb.extras.tags.get(name=tag).id for tag in newconfig["tags"].split(',')]
+                interface.tags = tags
+            except Exception as exc:
+                return {'success': False, 'reason': 'unknown tag found; exception: %s' % exc}
 
     try:
         success = interface.save()
@@ -359,89 +356,78 @@ def update_interface_values(name, interface, interface_config):
     else:
         return {'success': False, 'reason': 'interface not updated (values identical?)'}
 
-def update_device_values(name, new_deviceconfig):
+def update_device_values(name, newconfig):
 
     config = readConfig()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    # the newconfig contains a 'config' json variable
-    try:
-        newconfig = json.loads(new_deviceconfig['config'])
-    except Exception as exc:
-        return {'success': False, 'reason': 'not a valid json config %s' % exc}
 
     # get device
     nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
         return {'success': False, 'reason': 'unknown device %s' % name}
 
+    if 'name' in newconfig:
+        nb_device.name = newconfig['name']
+
+    if 'device_type' in newconfig:
+        nb_devicetype = nb.dcim.device_types.get(slug=newconfig['device_type'])
+        if nb_devicetype is None:
+            return {'success': False, 'reason': 'unknown type %s' % newconfig['device_type']}
+        nb_device.device_type = nb_devicetype.id
+
+    if 'device_role' in newconfig:
+        nb_role = nb.dcim.device_roles.get(slug=newconfig['device_role'])
+        if nb_role is None:
+            return {'success': False, 'reason': 'unknown role %s' % newconfig['device_role']}
+        nb_device.device_role = nb_role.id
+
     if 'serial' in newconfig:
         nb_device.serial = newconfig['serial']
 
     if 'site' in newconfig:
         nb_site = nb.dcim.sites.get(slug=newconfig['site'])
-        if nb_site == None:
+        if nb_site is None:
             return {'success': False, 'reason': 'unknown site %s' % newconfig['site']}
-        else:
-            nb_device.site = nb_site
+        nb_device.site = nb_site
 
-    # you cannot change the manufacturer or platform without the device type
-    if 'manufacturer' in newconfig and 'platform' in newconfig and 'devicetype' in newconfig:
+    if 'location' in newconfig:
+        nb_location = nb.dcim.locations.get(slug=newconfig['location'])
+        if nb_location is None:
+            return {'success': False, 'reason': 'unknown location %s' % newconfig['location']}
+        nb_device.location = nb_location.id
+
+    if 'manufacturer' in newconfig:
         nb_manufacturer = nb.dcim.manufacturers.get(slug=newconfig['manufacturer'])
-        if nb_manufacturer == None:
+        if nb_manufacturer is None:
             return {'success': False, 'reason': 'unknown manufacturer %s' % newconfig['manufacturer']}
-
-        nb_platform = nb.dcim.platforms.get(slug=newconfig['platform'])
-        if nb_platform == None:
-            return {'success': False, 'reason': 'unknown platform %s' % newconfig['platform']}
-
-        nb_devicetype = nb.dcim.device_types.get(slug=newconfig['devicetype'])
-        if nb_devicetype == None:
-            return {'success': False, 'reason': 'unknown type %s' % newconfig['devicetype']}
-
-        nb_device.platform = nb_platform.id
         nb_device.manufacturer = nb_manufacturer.id
-        nb_device.device_type = nb_devicetype.id
-    # only the device type should be changed
-    elif 'devicetype' in newconfig:
-        nb_devicetype = nb.dcim.device_types.get(slug=newconfig['devicetype'])
-        if nb_devicetype == None:
-            return {'success': False, 'reason': 'unknown type %s' % newconfig['devicetype']}
-        nb_device.device_type = nb_devicetype.id
 
-    if 'role' in newconfig:
-        nb_role = nb.dcim.device_roles.get(slug=newconfig['role'])
-        if nb_role == None:
-            return {'success': False, 'reason': 'unknown role %s' % role}
-        nb_device.device_role = nb_role.id
+    if 'platform' in newconfig:
+        nb_platform = nb.dcim.platforms.get(slug=newconfig['platform'])
+        if nb_platform is None:
+            return {'success': False, 'reason': 'unknown platform %s' % newconfig['platform']}
+        nb_device.platform = nb_platform.id
 
     if 'primary_ip4' in newconfig:
         nb_ipadd = nb.ipam.ip_addresses.get(
             address=newconfig['primary_ip4']
         )
-        if nb_ipadd == None:
+        if nb_ipadd is None:
             return {'success': False, 'reason': 'unknown ipv4 address %s' % newconfig['primary_ip4']}
         nb_device.primary_ip4 = nb_ipadd.id
 
-    # location and site depend on each other
-    if 'location' in newconfig and 'site' in newconfig:
-        nb_location = nb.dcim.locations.get(slug=newconfig['location'])
-        if nb_location == None:
-            return {'success': False, 'reason': 'unknown location %s' % newconfig['location']}
-        nb_site = nb.dcim.sites.get(slug=newconfig['site'])
-        if nb_site == None:
-            return {'success': False, 'reason': 'unknown site %s' % newconfig['site']}
+    if 'comments' in newconfig:
+        nb_device.comments = newconfig['comments']
 
-        nb_device.site = nb_site.id
-        nb_device.location = nb_location.id
+    if 'tags' in newconfig:
+        if newconfig['tags'] == "":
+            nb_device.tags = []
+        else:
+            tags = [nb.extras.tags.get(name=tag).id for tag in newconfig["tags"].split(',')]
+            nb_device.tags = tags
 
-    # change only location (site is NOT changed!)
-    if 'location' in newconfig:
-        nb_location = nb.dcim.locations.get(slug=newconfig['location'])
-        if nb_location == None:
-            return {'success': False, 'reason': 'unknown location %s' % newconfig['location']}
-
-        nb_device.location = nb_location.id
+    if 'status' in newconfig:
+        nb_device.status = newconfig['status']
 
     try:
         success = nb_device.save()
@@ -481,3 +467,8 @@ def get_vlan(nb, vid, site=""):
         )
 
     return (nb_vlan, True)
+
+def update_device_json(name, newconfig):
+
+    print (newconfig)
+    return {}

@@ -57,11 +57,11 @@ class UpdatePrimaryModel(BaseModel):
 class UpdateInterfaceModel(BaseModel):
     name: str
     interface: str
-    config: str
+    config: dict
 
 class UpdateDeviceModel(BaseModel):
     name: str
-    config: str
+    config: dict
 
 @router.post("/adddevice", tags=["onboarding"])
 async def add_device_to_sot(config: AddDeviceModel):
@@ -123,7 +123,7 @@ async def update_interface(config: UpdateInterfaceModel):
     result = sot.update_interface_values(
         config.name,
         config.interface,
-        config.dict()
+        config.config
     )
     return result
 
@@ -132,9 +132,10 @@ async def update_interface(config: UpdateDeviceModel):
 
     result = sot.update_device_values(
         config.name,
-        config.dict()
+        config.config
     )
     return result
+
 
 @router.get("/getchoice/{item}", tags=["onboarding"])
 async def get_choice(item: str):
