@@ -109,7 +109,7 @@ def get_device_id(device):
     else:
         return 0
 
-def add_device(name, site, role, devicetype, manufacturer, platform, status):
+def add_device(name, site, role, devicetype, manufacturer, platform, status='active'):
 
     """
     adds device to nautobot
@@ -134,39 +134,38 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status):
     nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
         # check site
-        if nb.dcim.sites.get(slug=site) == None:
-            return {'success': False, 'reason':'unknown site %s' % site}
-        else:
-            site_id = nb.dcim.sites.get(slug=site).id
+        nb_site = nb.dcim.sites.get(slug=site)
+        if nb_site == None:
+            return {'success': False, 'reason': 'unknown site %s' % site}
+
         # check role
-        if nb.dcim.device_roles.get(slug=role) == None:
+        nb_role = nb.dcim.device_roles.get(slug=role)
+        if nb_role == None:
             return {'success': False, 'reason': 'unknown role %s' % role}
-        else:
-            role_id = nb.dcim.device_roles.get(slug=role).id
-        # check type
-        if nb.dcim.device_types.get(slug=devicetype) == None:
-            return {'success': False, 'reason': 'unknown type %s' % type}
-        else:
-            devicetype_id = nb.dcim.device_types.get(slug=devicetype).id
+
+        # check device type
+        nb_devicetype = nb.dcim.device_types.get(slug=devicetype)
+        if nb_devicetype == None:
+            return {'success': False, 'reason': 'unknown type %s' % devicetype}
+
         # check manufacturer
-        if nb.dcim.manufacturers.get(slug=manufacturer) == None:
+        nb_manufacturer = nb.dcim.manufacturers.get(slug=manufacturer)
+        if nb_manufacturer == None:
             return {'success': False, 'reason': 'unknown manufacturer %s' % manufacturer}
-        else:
-            manufacturer_id = nb.dcim.manufacturers.get(slug=manufacturer).id
+
         # check platform
-        if nb.dcim.platforms.get(slug=platform) == None:
+        nb_platform = nb.dcim.platforms.get(slug=platform)
+        if  nb_platform == None:
             return {'success': False, 'reason': 'unknown platform %s' % platform}
-        else:
-            platform_id = nb.dcim.platforms.get(slug=platform).id
 
         try:
             nb_device = nb.dcim.devices.create(
                 name=name,
-                manufacturer=manufacturer_id,
-                platform=platform_id,
-                site=site_id,
-                device_role=role_id,
-                device_type=devicetype_id,
+                manufacturer=nb_manufacturer.id,
+                platform=nb_platform.id,
+                site=nb_site.id,
+                device_role=nb_role.id,
+                device_type=nb_devicetype.id,
                 status=status,
                 )
 
@@ -176,13 +175,14 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status):
     else:
         return {'success': False,'reason':'device already in sot'}
 
-def add_interface(name, interface, interfacetype, description="None"):
+def add_interface(name, interface, interfacetype, enabled=True, description="None"):
     """
 
     Args:
         name: name of device
         interface: name of interface
         interfacetype: interface type eg. Loopback
+        enabled: shutdown or not
         description: description
 
     Returns:
@@ -209,7 +209,8 @@ def add_interface(name, interface, interfacetype, description="None"):
                 device=nb_device.id,
                 name=interface,
                 description=description,
-                type=interfacetype
+                type=interfacetype,
+                enabled=enabled
             )
             return {'success': True, 'message': 'interface %s added to sot' % interface}
         except Exception as exc:
@@ -241,7 +242,7 @@ def add_address(name, interface, address):
         name=interface
     )
 
-    # if new address add it
+    # if it is a new address add it
     if nb_interface:
         try:
             nb_ipadd = nb.ipam.ip_addresses.create(
@@ -269,7 +270,7 @@ def add_vlan(vid, name, status, site):
 
     if not nb_vlan:
         try:
-            if site_id is None:
+            if site is None:
                 nb_vlan = nb.ipam.vlans.create(
                     name=name,
                     vid=vid,
@@ -287,26 +288,8 @@ def add_vlan(vid, name, status, site):
             return {'success': False, 'reason': 'got exception %s' % exc}
     else:
         return {'success': False, 'reason': 'vlan already in sot'}
-def update_primary_adress(name, address):
 
-    config = readConfig()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    # get device id
-    nb_device = nb.dcim.devices.get(name=name)
-    if not nb_device:
-        return {'success': False, 'reason': 'unknown device'}
-
-    # get ip address
-    nb_ipadd = nb.ipam.ip_addresses.get(
-        address=address
-    )
-
-    nb_device.primary_ip4 = nb_ipadd
-    nb_device.save()
-    return {'success': True, 'message': 'address is primary'}
-
-def update_interface_values(interface_config):
+def update_interface_values(name, interface, interface_config):
 
     config = readConfig()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
@@ -315,18 +298,18 @@ def update_interface_values(interface_config):
     try:
         newconfig = json.loads(interface_config['config'])
     except Exception as exc:
-        return {'success': False, 'reason': 'not a valid json config' % exc}
+        return {'success': False, 'reason': 'not a valid json config %s' % exc}
 
     # get device
-    nb_device = nb.dcim.devices.get(name=interface_config['name'])
+    nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
         return {'success': False, 'reason': 'unknown device'}
 
     # get interface
     interface = nb.dcim.interfaces.get(
-            device_id=nb_device.id,
-            name=interface_config['interface']
-        )
+        device_id=nb_device.id,
+        name=interface
+    )
     if interface is None:
         return {'success': False, 'reason': 'unknown interface %s' % interface}
 
@@ -337,47 +320,138 @@ def update_interface_values(interface_config):
         )
         # now set LAG interface
         interface.lag = lag_interface
-        interface.save()
 
     if 'mode' in newconfig:
         interface.mode = newconfig['mode']
-        interface.save()
 
     if 'untagged' in newconfig:
         (untagged_vlan, success) = get_vlan(nb, newconfig['untagged'], newconfig['site'])
         if success and untagged_vlan is not None:
             interface.untagged_vlan = untagged_vlan
-            interface.save()
         else:
             return {'success': False, 'reason': 'unknown untagged vlan'}
+
+    if 'tagged' in newconfig:
+        vlans = newconfig['tagged'].split(",")
+        tagged = []
+        for vlan in vlans:
+            (tv, success) = get_vlan(nb, vlan, newconfig['site'])
+            if success and tv is not None:
+                tagged.append(tv)
+            else:
+                return {'success': False, 'reason': 'unknown tagged vlan %s' % vlan}
+        interface.tagged_vlans = tagged
 
     if 'tags' in newconfig:
         try:
             tags = [nb.extras.tags.get(name=tag).id for tag in newconfig["tags"].split(',')]
-            print (tags)
             interface.tags = tags
-            interface.save()
         except Exception as exc:
             return {'success': False, 'reason': 'unknown tag found; exception: %s' % exc}
 
-    return {'success': True, 'message': 'interface updated'}
+    try:
+        success = interface.save()
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
 
-def update_device_values(interface_config):
+    if success:
+        return {'success': True, 'message': 'interface updated'}
+    else:
+        return {'success': False, 'reason': 'interface not updated (values identical?)'}
+
+def update_device_values(name, new_deviceconfig):
 
     config = readConfig()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
-    # get device id
-    nb_device = nb.dcim.devices.get(name=interface_config['name'])
+    # the newconfig contains a 'config' json variable
+    try:
+        newconfig = json.loads(new_deviceconfig['config'])
+    except Exception as exc:
+        return {'success': False, 'reason': 'not a valid json config %s' % exc}
+
+    # get device
+    nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
-        return {'success': False, 'reason': 'unknown device'}
+        return {'success': False, 'reason': 'unknown device %s' % name}
 
-    if 'tags' in newconfig:
-        tags = [ nb.extras.tags.get(name=tag).id for tag in newconfig["tags"] ]
-        nb_device.tags = tags
-        nb_device.save()
+    if 'serial' in newconfig:
+        nb_device.serial = newconfig['serial']
 
-    return {'success': True, 'message': 'device updated'}
+    if 'site' in newconfig:
+        nb_site = nb.dcim.sites.get(slug=newconfig['site'])
+        if nb_site == None:
+            return {'success': False, 'reason': 'unknown site %s' % newconfig['site']}
+        else:
+            nb_device.site = nb_site
+
+    # you cannot change the manufacturer or platform without the device type
+    if 'manufacturer' in newconfig and 'platform' in newconfig and 'devicetype' in newconfig:
+        nb_manufacturer = nb.dcim.manufacturers.get(slug=newconfig['manufacturer'])
+        if nb_manufacturer == None:
+            return {'success': False, 'reason': 'unknown manufacturer %s' % newconfig['manufacturer']}
+
+        nb_platform = nb.dcim.platforms.get(slug=newconfig['platform'])
+        if nb_platform == None:
+            return {'success': False, 'reason': 'unknown platform %s' % newconfig['platform']}
+
+        nb_devicetype = nb.dcim.device_types.get(slug=newconfig['devicetype'])
+        if nb_devicetype == None:
+            return {'success': False, 'reason': 'unknown type %s' % newconfig['devicetype']}
+
+        nb_device.platform = nb_platform.id
+        nb_device.manufacturer = nb_manufacturer.id
+        nb_device.device_type = nb_devicetype.id
+    # only the device type should be changed
+    elif 'devicetype' in newconfig:
+        nb_devicetype = nb.dcim.device_types.get(slug=newconfig['devicetype'])
+        if nb_devicetype == None:
+            return {'success': False, 'reason': 'unknown type %s' % newconfig['devicetype']}
+        nb_device.device_type = nb_devicetype.id
+
+    if 'role' in newconfig:
+        nb_role = nb.dcim.device_roles.get(slug=newconfig['role'])
+        if nb_role == None:
+            return {'success': False, 'reason': 'unknown role %s' % role}
+        nb_device.device_role = nb_role.id
+
+    if 'primary_ip4' in newconfig:
+        nb_ipadd = nb.ipam.ip_addresses.get(
+            address=newconfig['primary_ip4']
+        )
+        if nb_ipadd == None:
+            return {'success': False, 'reason': 'unknown ipv4 address %s' % newconfig['primary_ip4']}
+        nb_device.primary_ip4 = nb_ipadd.id
+
+    # location and site depend on each other
+    if 'location' in newconfig and 'site' in newconfig:
+        nb_location = nb.dcim.locations.get(slug=newconfig['location'])
+        if nb_location == None:
+            return {'success': False, 'reason': 'unknown location %s' % newconfig['location']}
+        nb_site = nb.dcim.sites.get(slug=newconfig['site'])
+        if nb_site == None:
+            return {'success': False, 'reason': 'unknown site %s' % newconfig['site']}
+
+        nb_device.site = nb_site.id
+        nb_device.location = nb_location.id
+
+    # change only location (site is NOT changed!)
+    if 'location' in newconfig:
+        nb_location = nb.dcim.locations.get(slug=newconfig['location'])
+        if nb_location == None:
+            return {'success': False, 'reason': 'unknown location %s' % newconfig['location']}
+
+        nb_device.location = nb_location.id
+
+    try:
+        success = nb_device.save()
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
+
+    if success:
+        return {'success': True, 'message': 'device updated'}
+    else:
+        return {'success': False, 'message': 'device not updated (values identical?)'}
 def get_choices(item):
 
     config = readConfig()

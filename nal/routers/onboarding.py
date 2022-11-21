@@ -4,9 +4,6 @@ from ..sot import nautobot as sot
 from typing import Optional
 
 
-
-DEFAULT_MANUFACTURER = "cisco"
-
 router = APIRouter(
     prefix="/onboarding",
     tags=["onboarding"],
@@ -31,6 +28,7 @@ class AddInterfaceModel(BaseModel):
     interface: str
     interfacetype: str
     # optional
+    enabled: Optional[bool] = True
     description: Optional[str] = ''
 
     class Config:
@@ -38,7 +36,9 @@ class AddInterfaceModel(BaseModel):
         @validator('description')
         def set_description(cls, description):
             return description or ''
-
+        @validator('enabled')
+        def set_enabled(cls, enabled):
+            return enabled or True
 class AddAddressModel(BaseModel):
     name: str
     interface: str
@@ -84,6 +84,7 @@ async def add_device_to_sot(config: AddInterfaceModel):
         config.name,
         config.interface,
         config.interfacetype,
+        config.enabled,
         config.description
     )
 
@@ -119,13 +120,20 @@ async def update_primary_address(config: UpdatePrimaryModel):
 @router.post("/updateinterface", tags=["onboarding"])
 async def update_interface(config: UpdateInterfaceModel):
 
-    result = sot.update_interface_values(config.dict())
+    result = sot.update_interface_values(
+        config.name,
+        config.interface,
+        config.dict()
+    )
     return result
 
 @router.post("/updatedevice", tags=["onboarding"])
 async def update_interface(config: UpdateDeviceModel):
 
-    result = sot.update_device_values(config.dict())
+    result = sot.update_device_values(
+        config.name,
+        config.dict()
+    )
     return result
 
 @router.get("/getchoice/{item}", tags=["onboarding"])
