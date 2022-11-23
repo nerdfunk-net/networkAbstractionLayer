@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI
 from fastapi.security.api_key import APIKey
 from .internal import admin
-from .routers import getconfig, getdevice, onboarding
+from .routers import getconfig, getdevice, onboarding, getter
 from .auth import auth
 
 
@@ -14,7 +14,7 @@ and nautobot respectively our mini aps and other sources of truth
 
 # start app with
 #
-# uvicorn nal.main:app --reload --port 8000
+# uvicorn nal.main:app --port 8000 --host 127.0.0.1 (--reload)
 #
 # in the upper directory
 app = FastAPI(
@@ -25,6 +25,7 @@ app = FastAPI(
 app.include_router(getconfig.router)
 app.include_router(getdevice.router)
 app.include_router(onboarding.router)
+app.include_router(getter.router)
 
 app.include_router(
     admin.router,

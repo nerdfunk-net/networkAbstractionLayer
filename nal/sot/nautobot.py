@@ -1,6 +1,5 @@
 from pynautobot import api
 from ..config.nal import readConfig
-import json
 
 
 PYTHONWARNINGS="ignore:Unverified HTTPS request"
