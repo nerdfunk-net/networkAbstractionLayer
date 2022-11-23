@@ -307,6 +307,24 @@ def add_vlan(vid, name, status, site):
     else:
         return {'success': False, 'reason': 'vlan already in sot'}
 
+def add_manufacturer(name, slug):
+
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
+    if nb_manufacturer:
+        return {'success': False, 'reason': 'manufacturer %s already in sot' % name}
+
+    try:
+        nb_manufacturer = nb.dcim.manufacturers.create(
+            name=name,
+            slug=slug,
+        )
+        return {'success': True, 'message': 'manufacturer added to sot' % name}
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
+
 def update_interface_values(name, interface, newconfig):
 
     config = readConfig()
@@ -387,6 +405,9 @@ def update_device_values(name, newconfig):
     if 'name' in newconfig:
         nb_device.name = newconfig['name']
 
+    if 'slug' in newconfig:
+        nb_device.slug = newconfig['slug']
+
     if 'device_type' in newconfig:
         nb_devicetype = nb.dcim.device_types.get(slug=newconfig['device_type'])
         if nb_devicetype is None:
@@ -455,7 +476,7 @@ def update_device_values(name, newconfig):
     if success:
         return {'success': True, 'message': 'device updated'}
     else:
-        return {'success': False, 'message': 'device not updated (values identical?)'}
+        return {'success': False, 'reason': 'device not updated (values identical?)'}
 
 def update_site_values(slug, newconfig):
 
@@ -466,6 +487,8 @@ def update_site_values(slug, newconfig):
     if nb_site is  None:
         return {'success': False, 'reason': 'site %s is not in sot' % name}
 
+    if 'slug' in newconfig:
+        nb_site.slug = newconfig['slug']
     if 'name' in newconfig:
         nb_site.name = newconfig['name']
     if 'asn' in newconfig:
@@ -499,7 +522,34 @@ def update_site_values(slug, newconfig):
     if success:
         return {'success': True, 'message': 'site updated'}
     else:
-        return {'success': False, 'message': 'site not updated (values identical?)'}
+        return {'success': False, 'reason': 'site not updated (values identical?)'}
+
+def update_manufacturer_values(slug, newconfig):
+
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
+    if nb_manufacturer is  None:
+        return {'success': False, 'reason': 'manufacturer %s is not in sot' % slug}
+
+    if 'slug' in newconfig:
+        nb_manufacturer.slug = newconfig['slug']
+    if 'name' in newconfig:
+        nb_manufacturer.name = newconfig['name']
+    if 'description' in newconfig:
+        nb_manufacturer.description = newconfig['description']
+
+    try:
+        success = nb_manufacturer.save()
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
+
+    if success:
+        return {'success': True, 'message': 'manufacturer updated'}
+    else:
+        return {'success': False, 'reason': 'manufacturer not updated (values identical?)'}
+
 def get_choices(item):
 
     config = readConfig()

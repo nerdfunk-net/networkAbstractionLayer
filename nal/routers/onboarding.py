@@ -47,6 +47,10 @@ class AddAddressModel(BaseModel):
     interface: str
     address: str
 
+class AddManufacturersModel(BaseModel):
+    name: str
+    slug: str
+
 class AddVlanModel(BaseModel):
     vid: str
     name: str
@@ -68,6 +72,10 @@ class UpdateSiteModel(BaseModel):
 
 class UpdateDeviceModel(BaseModel):
     name: str
+    config: dict
+
+class UpdateManufacturerModel(BaseModel):
+    slug: str
     config: dict
 
 @router.post("/addsite", tags=["onboarding"])
@@ -126,6 +134,15 @@ async def add_vlan_to_sot(config: AddVlanModel):
         config.site)
 
     return result
+
+@router.post("/addmanufacturer", tags=["onboarding"])
+async def add_manufacturer_to_sot(config: AddManufacturersModel):
+    result = sot.add_manufacturer(
+        config.name,
+        config.slug)
+
+    return result
+
 @router.post("/updateprimary", tags=["onboarding"])
 async def update_primary_address(config: UpdatePrimaryModel):
     result = sot.update_primary_adress(
@@ -157,6 +174,15 @@ async def update_interface(config: UpdateDeviceModel):
 async def update_site(config: UpdateSiteModel):
 
     result = sot.update_site_values(
+        config.slug,
+        config.config
+    )
+    return result
+
+@router.post("/updatemanufacturer", tags=["onboarding"])
+async def update_manufacturer(config: UpdateManufacturerModel):
+
+    result = sot.update_manufacturer_values(
         config.slug,
         config.config
     )
