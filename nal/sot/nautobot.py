@@ -108,6 +108,25 @@ def get_device_id(device):
     else:
         return 0
 
+def add_site(name, slug, status):
+
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_site = nb.dcim.sites.get(slug=slug)
+    if nb_site is not None:
+        return {'success': False, 'reason': 'site %s already in sot' % name}
+
+    try:
+        nb_site = nb.dcim.sites.create(
+            name=name,
+            slug=slug,
+            status=status,
+        )
+        return {'success': True, 'message': 'site %s added to sot' % name}
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
+
 def add_device(name, site, role, devicetype, manufacturer, platform, status='active'):
 
     """
@@ -437,6 +456,50 @@ def update_device_values(name, newconfig):
         return {'success': True, 'message': 'device updated'}
     else:
         return {'success': False, 'message': 'device not updated (values identical?)'}
+
+def update_site_values(slug, newconfig):
+
+    config = readConfig()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_site = nb.dcim.sites.get(slug=slug)
+    if nb_site is  None:
+        return {'success': False, 'reason': 'site %s is not in sot' % name}
+
+    if 'name' in newconfig:
+        nb_site.name = newconfig['name']
+    if 'asn' in newconfig:
+        nb_site.asn = newconfig['asn']
+    if "time_zone" in newconfig:
+        nb_site.time_zone = newconfig["time_zone"]
+    if "description" in newconfig:
+        nb_site.description = newconfig["description"]
+    if "physical_address" in newconfig:
+        nb_site.physical_address = newconfig["physical_address"]
+    if "shipping_address" in newconfig:
+        nb_site.shipping_address = newconfig["shipping_address"]
+    if "latitude" in newconfig:
+        nb_site.latitude = newconfig["latitude"]
+    if "longitude" in newconfig:
+        nb_site.longitude = newconfig["longitude"]
+    if "contact_name" in newconfig:
+        nb_site.contact_name = newconfig["contact_name"]
+    if "contact_phone" in newconfig:
+        nb_site.contact_phone = newconfig["contact_phone"]
+    if "contact_email" in newconfig:
+        nb_site.contact_email = newconfig["contact_email"]
+    if "comments" in newconfig:
+        nb_site.comments = newconfig["comments"]
+
+    try:
+        success = nb_site.save()
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
+
+    if success:
+        return {'success': True, 'message': 'site updated'}
+    else:
+        return {'success': False, 'message': 'site not updated (values identical?)'}
 def get_choices(item):
 
     config = readConfig()

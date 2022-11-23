@@ -6,8 +6,10 @@ import git
 def get_file(repo, filename, pull=True):
     # read config
     config = readConfig()
+    if repo not in config['git']:
+        return {"success": False, "reason": "config error; unknown repo %s" % repo}
+
     path = config['git'][repo]['local']
-    branch = 'main'
 
     # get the local directory
     if repo not in config['git'] or 'local' not in config['git'][repo]:

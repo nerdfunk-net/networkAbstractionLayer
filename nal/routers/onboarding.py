@@ -10,8 +10,11 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# our base class contains all mandatory data we need to add
-# a device to nautobot
+class AddSiteModel(BaseModel):
+    name: str
+    slug: str
+    status: str
+
 class AddDeviceModel(BaseModel):
     name: str
     site: str
@@ -59,9 +62,23 @@ class UpdateInterfaceModel(BaseModel):
     interface: str
     config: dict
 
+class UpdateSiteModel(BaseModel):
+    slug: str
+    config: dict
+
 class UpdateDeviceModel(BaseModel):
     name: str
     config: dict
+
+@router.post("/addsite", tags=["onboarding"])
+async def add_site_to_sot(config: AddSiteModel):
+
+    result = sot.add_site(
+        config.name,
+        config.slug,
+        config.status)
+
+    return result
 
 @router.post("/adddevice", tags=["onboarding"])
 async def add_device_to_sot(config: AddDeviceModel):
@@ -136,6 +153,14 @@ async def update_interface(config: UpdateDeviceModel):
     )
     return result
 
+@router.post("/updatesite", tags=["onboarding"])
+async def update_site(config: UpdateSiteModel):
+
+    result = sot.update_site_values(
+        config.slug,
+        config.config
+    )
+    return result
 
 @router.get("/getchoice/{item}", tags=["onboarding"])
 async def get_choice(item: str):
