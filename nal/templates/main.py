@@ -4,7 +4,8 @@ from ..config.nal import readConfig
 
 additional_newline = ["interface"]
 
-def getSection(config, section):
+
+def get_section(config, section):
     """
     returns specified section of rendered config
     Args:
@@ -36,7 +37,9 @@ def getSection(config, section):
             result = result + line + '\n'
 
     return result
-def renderConfig(device, device_config):
+
+
+def render_config(device, device_config):
 
     """
 

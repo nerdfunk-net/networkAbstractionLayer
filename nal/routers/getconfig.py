@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from enum import Enum
-from ..sot.nautobot import get_intended_config
-from ..templates.main import renderConfig, getSection
+from ..sot import nautobot
+from ..templates.main import render_config, get_section
 from ..templates.diff import get_diff
 
 # define router
@@ -11,11 +11,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# which mode do we accept
+
 class SourceMode(str, Enum):
+    # which mode do we accept
     intended = "intended"
     current = "current"
     backup = "backup"
+
 
 @router.get("/diff/{device}/{old}/{new}", tags=["getconfig"])
 async def get_config_dif(device: str, old: SourceMode, new: SourceMode):
@@ -31,6 +33,7 @@ async def get_config_dif(device: str, old: SourceMode, new: SourceMode):
     """
     return get_diff(device, old, new)
 
+
 @router.get("/{device}/", tags=["getconfig"])
 async def get_full_intended_config(device: str):
     """
@@ -41,6 +44,7 @@ async def get_full_intended_config(device: str):
         json containing the config
     """
     return get_config(device, "intended", "")
+
 
 @router.get("/{device}/{source}", tags=["getconfig"])
 async def get_full_config(device: str):
@@ -53,6 +57,7 @@ async def get_full_config(device: str):
         json containing the config
     """
     return get_config(device, source.value, "")
+
 
 @router.get("/{device}/{source}/{section}", tags=["getconfig"])
 async def get_config_of_section(device: str, source: SourceMode, section: str):
@@ -67,6 +72,7 @@ async def get_config_of_section(device: str, source: SourceMode, section: str):
     """
     return get_config(device, source.value, section)
 
+
 def get_config(device, source, section=""):
 
     result = {}
@@ -74,8 +80,8 @@ def get_config(device, source, section=""):
     result['source'] = source
 
     if source == 'intended':
-        device_config = get_intended_config(device, 'intended_config')
-        rendered_config = renderConfig(device, device_config)
+        device_config = nautobot.get_high_level_data_model(device, 'intended_config')
+        rendered_config = render_config(device, device_config)
     elif source == 'current':
         rendered_config = "current"
     elif source == "backup":
@@ -83,7 +89,7 @@ def get_config(device, source, section=""):
 
     if len(section) > 0:
         result['section'] = section
-        result['config'] = getSection(rendered_config, section)
+        result['config'] = get_section(rendered_config, section)
     else:
         result['config'] = rendered_config
 

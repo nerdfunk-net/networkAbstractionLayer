@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from fastapi import Request
-from ..sot.nautobot import getDevices, get_graph_ql, get_device_id
+from ..sot.nautobot import get_devices, get_graph_ql, get_device_id
 
 
 
@@ -50,7 +50,7 @@ async def get_device(device: str, query: str | None = None):
             data = ""
     else:
         result['query'] = 'api'
-        data = getDevices({'name':device})
+        data = get_devices({'name':device})
 
     if data:
         result['count'] = len(data)
@@ -77,11 +77,11 @@ async def get_filtered_devices(request: Request):
     result['count'] = 0  # default if no match
 
     if request_args:
-        data = getDevices(request_args)
+        data = get_devices(request_args)
     else:
-        data = getDevices({'name': ''})
+        data = get_devices({'name': ''})
 
-    if data:
+    if data is not None:
             result['count'] = len(data)
             result['result'] = data
             return result

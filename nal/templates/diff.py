@@ -1,7 +1,7 @@
 import difflib
 import os.path
-from ..templates.main import renderConfig
-from ..sot.nautobot import get_intended_config
+from ..templates.main import render_config
+from ..sot.nautobot import get_high_level_data_model
 from ..config.nal import readConfig
 
 
@@ -28,10 +28,10 @@ def get_diff(device, old, new):
 
     # read intended config of device if we need it
     if old == 'intended' or new == 'intended':
-        intended_config = get_intended_config(device, 'intended_config')
+        intended_config = get_high_level_data_model(device, 'intended_config')
 
     if old == 'intended':
-        old_config = renderConfig(device, intended_config).split('\n')
+        old_config = render_config(device, intended_config).split('\n')
     elif old == 'backup':
         filename = "%s/%s" % (config['inventory']['backup_configs'], device)
         if os.path.isfile(filename):
@@ -43,7 +43,7 @@ def get_diff(device, old, new):
             return result
 
     if new == 'intended':
-        new_config = renderConfig(device, intended_config).split('\n')
+        new_config = render_config(device, intended_config).split('\n')
     elif new == 'backup':
         filename = "%s/%s" % (config['inventory']['backup_configs'], device)
         if os.path.isfile(filename):

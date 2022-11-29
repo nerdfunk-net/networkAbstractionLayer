@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, validator
 from ..sot import nautobot as sot
+from ..sot import onboarding as onboarding
 from typing import Optional
 
 
@@ -10,10 +11,12 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 class AddSiteModel(BaseModel):
     name: str
     slug: str
     status: str
+
 
 class AddDeviceModel(BaseModel):
     name: str
@@ -24,6 +27,7 @@ class AddDeviceModel(BaseModel):
     platform: Optional[str]
     status: str
     config: Optional[str]
+
 
 class AddInterfaceModel(BaseModel):
     # mandatory
@@ -42,14 +46,27 @@ class AddInterfaceModel(BaseModel):
         @validator('enabled')
         def set_enabled(cls, enabled):
             return enabled or True
+
+
 class AddAddressModel(BaseModel):
     name: str
     interface: str
     address: str
 
-class AddManufacturersModel(BaseModel):
+
+class AddPlatformModelModel(BaseModel):
     name: str
     slug: str
+    description: Optional[str] = ''
+    manufacturer: Optional[str] = ''
+    napalm_driver: Optional[str] = ''
+    napalm_args: Optional[str] = ''
+
+
+class NameAndSlugModel(BaseModel):
+    name: str
+    slug: str
+
 
 class AddVlanModel(BaseModel):
     vid: str
@@ -57,41 +74,43 @@ class AddVlanModel(BaseModel):
     status: str
     site: Optional[str] = ''
 
+
 class UpdatePrimaryModel(BaseModel):
     name: str
     address: str
+
 
 class UpdateInterfaceModel(BaseModel):
     name: str
     interface: str
     config: dict
 
-class UpdateSiteModel(BaseModel):
-    slug: str
-    config: dict
 
-class UpdateDeviceModel(BaseModel):
+class NameAndConfigModel(BaseModel):
     name: str
     config: dict
 
-class UpdateManufacturerModel(BaseModel):
+
+class SlugAndConfigModel(BaseModel):
     slug: str
     config: dict
+
 
 @router.post("/addsite", tags=["onboarding"])
 async def add_site_to_sot(config: AddSiteModel):
 
-    result = sot.add_site(
+    result = onboarding.add_site(
         config.name,
         config.slug,
         config.status)
 
     return result
 
+
 @router.post("/adddevice", tags=["onboarding"])
 async def add_device_to_sot(config: AddDeviceModel):
 
-    result = sot.add_device(
+    result = onboarding.add_device(
         config.name,
         config.site,
         config.role,
@@ -102,10 +121,11 @@ async def add_device_to_sot(config: AddDeviceModel):
 
     return result
 
+
 @router.post("/addinterface", tags=["onboarding"])
 async def add_device_to_sot(config: AddInterfaceModel):
 
-    result = sot.add_interface(
+    result = onboarding.add_interface(
         config.name,
         config.interface,
         config.interfacetype,
@@ -115,19 +135,21 @@ async def add_device_to_sot(config: AddInterfaceModel):
 
     return result
 
+
 @router.post("/addaddress", tags=["onboarding"])
 async def add_device_to_sot(config: AddAddressModel):
 
-    result = sot.add_address(
+    result = onboarding.add_address(
         config.name,
         config.interface,
         config.address)
 
     return result
 
+
 @router.post("/addvlan", tags=["onboarding"])
 async def add_vlan_to_sot(config: AddVlanModel):
-    result = sot.add_vlan(
+    result = onboarding.add_vlan(
         config.vid,
         config.name,
         config.status,
@@ -135,60 +157,91 @@ async def add_vlan_to_sot(config: AddVlanModel):
 
     return result
 
+
 @router.post("/addmanufacturer", tags=["onboarding"])
-async def add_manufacturer_to_sot(config: AddManufacturersModel):
-    result = sot.add_manufacturer(
+async def add_manufacturer_to_sot(config: NameAndSlugModel):
+    result = onboarding.add_manufacturer(
         config.name,
         config.slug)
 
     return result
 
+
+@router.post("/addplatform", tags=["onboarding"])
+async def add_platform_to_sot(config: AddPlatformModelModel):
+    result = onboarding.add_platform(
+        config.name,
+        config.slug,
+        config.description,
+        config.manufacturer,
+        config.napalm_driver,
+        config.napalm_args)
+
+    return result
+
+
 @router.post("/updateprimary", tags=["onboarding"])
 async def update_primary_address(config: UpdatePrimaryModel):
-    result = sot.update_primary_adress(
+    result = onboarding.update_primary_adress(
         config.name,
         config.address
     )
 
     return result
+
+
 @router.post("/updateinterface", tags=["onboarding"])
 async def update_interface(config: UpdateInterfaceModel):
 
-    result = sot.update_interface_values(
+    result = onboarding.update_interface_values(
         config.name,
         config.interface,
         config.config
     )
     return result
 
-@router.post("/updatedevice", tags=["onboarding"])
-async def update_interface(config: UpdateDeviceModel):
 
-    result = sot.update_device_values(
+@router.post("/updatedevice", tags=["onboarding"])
+async def update_interface(config: NameAndConfigModel):
+
+    result = onboarding.update_device_values(
         config.name,
         config.config
     )
     return result
 
-@router.post("/updatesite", tags=["onboarding"])
-async def update_site(config: UpdateSiteModel):
 
-    result = sot.update_site_values(
+@router.post("/updatesite", tags=["onboarding"])
+async def update_site(config: SlugAndConfigModel):
+
+    result = onboarding.update_site_values(
         config.slug,
         config.config
     )
     return result
+
 
 @router.post("/updatemanufacturer", tags=["onboarding"])
-async def update_manufacturer(config: UpdateManufacturerModel):
+async def update_manufacturer(config: SlugAndConfigModel):
 
-    result = sot.update_manufacturer_values(
+    result = onboarding.update_manufacturer_values(
         config.slug,
         config.config
     )
     return result
+
+
+@router.post("/updateplatform", tags=["onboarding"])
+async def update_platform(config: SlugAndConfigModel):
+
+    result = onboarding.update_platform_values(
+        config.slug,
+        config.config
+    )
+    return result
+
 
 @router.get("/getchoice/{item}", tags=["onboarding"])
 async def get_choice(item: str):
 
-    return sot.get_choices(item)
+    return onboarding.get_choices(item)

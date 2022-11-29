@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI
 from fastapi.security.api_key import APIKey
 from .internal import admin
-from .routers import getconfig, getdevice, onboarding, getter
+from .routers import getconfig, getdevice, onboarding, getter, hldm
 from .auth import auth
 
 
@@ -23,6 +23,7 @@ app = FastAPI(
     version="0.0.1",)
 
 app.include_router(getconfig.router)
+app.include_router(hldm.router)
 app.include_router(getdevice.router)
 app.include_router(onboarding.router)
 app.include_router(getter.router)

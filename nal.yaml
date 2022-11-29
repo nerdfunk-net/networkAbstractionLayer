@@ -4,7 +4,7 @@ nautobot:
     user: admin
     password: admin
     token: 18acb72f4f8df7d5b939492edaebc88a0992640d
-    intended_config: >
+    hldm: >
         query ($device_id: ID!) {
           device(id: $device_id) {
             config_context
@@ -120,6 +120,12 @@ nautobot:
             }
           }
         }
+git:
+    network_design:
+        username: your@username
+        token: "your token"
+        repo: "https://github.com/your_repo"
+        local: "your_directory"
 
 templates:
     default: ios
