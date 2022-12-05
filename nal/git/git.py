@@ -16,7 +16,8 @@ def get_file(repo, filename, pull=True):
         return {"success": False, "reason": "config error; local dir of %s does not exists" % repo}
 
     repo = git.Repo(path)
-    repo.remotes.origin.pull()
+    if pull:
+        repo.remotes.origin.pull()
     if repo is not None and pull:
         try:
             repo.remotes.origin.pull()

@@ -80,7 +80,7 @@ def get_config(device, source, section=""):
     result['source'] = source
 
     if source == 'intended':
-        device_config = nautobot.get_high_level_data_model(device, 'intended_config')
+        device_config = nautobot.get_low_level_data_model(device, 'hldm')
         rendered_config = render_config(device, device_config)
     elif source == 'current':
         rendered_config = "current"

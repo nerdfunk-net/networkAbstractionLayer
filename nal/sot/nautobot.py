@@ -129,7 +129,7 @@ def get_low_level_data_model(device, query='hldm'):
     """
 
     hldm = get_high_level_data_model(device, query)
-    lldm = businesslogic.business_logic((device, hldm))
+    lldm = businesslogic.business_logic(device, hldm)
 
     return lldm
 

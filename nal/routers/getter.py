@@ -9,6 +9,6 @@ router = APIRouter(
 )
 
 
-@router.get("/{repo}/{filePath:path}", tags=["getconfig"])
+@router.get("/{repo}/{filePath:path}", tags=["getter"])
 async def get_file(repo: str, filePath: str, update: bool=True):
     return git.get_file(repo, filePath, update)

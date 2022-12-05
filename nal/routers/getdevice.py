@@ -45,7 +45,7 @@ async def get_device(device: str, query: str | None = None):
         result['query'] = query
         id = get_device_id(device)
         if id != 0:
-            data = get_graph_ql('intended_config',{'device_id':id})
+            data = get_graph_ql('hldm',{'device_id':id})
         else:
             data = ""
     else:

@@ -5,7 +5,6 @@ from ..sot.nautobot import get_high_level_data_model
 from ..config.nal import readConfig
 
 
-
 def get_diff(device, old, new):
     """
     compares two configs and returns diff
@@ -28,7 +27,7 @@ def get_diff(device, old, new):
 
     # read intended config of device if we need it
     if old == 'intended' or new == 'intended':
-        intended_config = get_high_level_data_model(device, 'intended_config')
+        intended_config = get_high_level_data_model(device, 'hldm')
 
     if old == 'intended':
         old_config = render_config(device, intended_config).split('\n')
