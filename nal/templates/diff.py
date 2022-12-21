@@ -2,7 +2,7 @@ import difflib
 import os.path
 from ..templates.main import render_config
 from ..sot.nautobot import get_high_level_data_model
-from ..config.nal import readConfig
+from ..config.nal import read_config
 
 
 def get_diff(device, old, new):
@@ -18,12 +18,10 @@ def get_diff(device, old, new):
     """
 
     # read nal config
-    config = readConfig()
+    config = read_config()
 
     intended_config = ""
-    result = {}
-    result['new'] = new
-    result['old'] = old
+    result = {'new': new, 'old': old}
 
     # read intended config of device if we need it
     if old == 'intended' or new == 'intended':

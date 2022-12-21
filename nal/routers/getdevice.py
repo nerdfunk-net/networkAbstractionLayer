@@ -34,18 +34,17 @@ async def get_device(device: str, query: str | None = None):
 
     Args:
         device: name of device
+        query: either grapgql or api
 
     Returns: json of specified device
 
     """
-    result = {}
-    result['filter'] = {'name':device}
-    result['count'] = 0  # default if no match
+    result = {'filter': {'name': device}, 'count': 0}
     if query == 'graphql':
         result['query'] = query
-        id = get_device_id(device)
-        if id != 0:
-            data = get_graph_ql('hldm',{'device_id':id})
+        device_id = get_device_id(device)
+        if device_id != 0:
+            data = get_graph_ql('hldm',{'device_id':device_id})
         else:
             data = ""
     else:
@@ -72,9 +71,7 @@ async def get_filtered_devices(request: Request):
         the device as json
     """
     request_args = dict(request.query_params)
-    result = {}
-    result['filter'] = request_args
-    result['count'] = 0  # default if no match
+    result = {'filter': request_args, 'count': 0}
 
     if request_args:
         data = get_devices(request_args)

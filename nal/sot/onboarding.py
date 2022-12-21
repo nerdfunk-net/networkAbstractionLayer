@@ -1,10 +1,10 @@
 from pynautobot import api
-from ..config.nal import readConfig
+from ..config.nal import read_config
 
 
 def add_site(name, slug, status):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     nb_site = nb.dcim.sites.get(slug=slug)
@@ -40,7 +40,7 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
         json containing result
     """
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     # first check if the device is already present
@@ -102,7 +102,7 @@ def add_interface(name, interface, interfacetype, enabled=True, description="Non
     Returns:
         json containing result
     """
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     # get device id
@@ -134,7 +134,7 @@ def add_interface(name, interface, interfacetype, enabled=True, description="Non
 
 def add_address(name, interface, address):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     # get device id
@@ -175,7 +175,7 @@ def add_address(name, interface, address):
 
 def add_vlan(vid, name, status, site):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     (nb_vlan, success) = get_vlan(nb, vid, site)
@@ -205,7 +205,7 @@ def add_vlan(vid, name, status, site):
 
 def add_manufacturer(name, slug):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
@@ -223,7 +223,7 @@ def add_manufacturer(name, slug):
 
 def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm_args=""):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     nb_platform = nb.dcim.platforms.get(slug=slug)
@@ -252,7 +252,7 @@ def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm
 
 def update_interface_values(name, interface, newconfig):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     # get device
@@ -319,7 +319,7 @@ def update_interface_values(name, interface, newconfig):
 
 def update_device_values(name, newconfig):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     # get device
@@ -376,8 +376,17 @@ def update_device_values(name, newconfig):
         nb_ipadd = nb.ipam.ip_addresses.get(
             address=newconfig['primary_ip4']
         )
+
         if nb_ipadd is None:
-            return {'success': False, 'reason': 'unknown ipv4 address %s' % newconfig['primary_ip4']}
+            # unknown IP. Let's add it and assign it to device
+            nb_ipadd = nb.ipam.ip_addresses.create(
+                address=newconfig['primary_ip4'],
+                status='active',
+                assigned_object_type="dcim.interface",
+                assigned_object_id=nb.dcim.interfaces.get(
+                    device=nb_device,
+                    name=newconfig["interface"]).id
+            )
         nb_device.primary_ip4 = nb_ipadd.id
 
     if 'comments' in newconfig:
@@ -405,7 +414,7 @@ def update_device_values(name, newconfig):
 
 def update_site_values(slug, newconfig):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     nb_site = nb.dcim.sites.get(slug=slug)
@@ -451,7 +460,7 @@ def update_site_values(slug, newconfig):
 
 def update_manufacturer_values(slug, newconfig):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
@@ -477,7 +486,7 @@ def update_manufacturer_values(slug, newconfig):
 
 def update_platform_values(slug, newconfig):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     print (newconfig)
@@ -514,7 +523,7 @@ def update_platform_values(slug, newconfig):
 
 def get_choices(item):
 
-    config = readConfig()
+    config = read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     if item == 'device':

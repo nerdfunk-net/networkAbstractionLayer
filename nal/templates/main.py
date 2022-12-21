@@ -1,5 +1,5 @@
 import jinja2
-from ..config.nal import readConfig
+from ..config.nal import read_config
 
 
 additional_newline = ["interface"]
@@ -53,11 +53,11 @@ def render_config(device, device_config):
     """
 
     # set default values
-    config = readConfig()
+    config = read_config()
     if 'platform' in device_config['data']['device']:
         device_platform = device_config['data']['device']['platform']['slug']
     else:
-        return {'sucecss': False, 'reason': 'no plattform specified'}
+        return {'success': False, 'reason': 'no platform specified'}
 
     # do we have to trim the blocks
     if 'trim_blocks' in config['templates']:
