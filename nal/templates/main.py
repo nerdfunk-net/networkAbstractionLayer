@@ -1,5 +1,4 @@
 import jinja2
-from ..config.nal import read_config
 
 
 additional_newline = ["interface"]

@@ -2,7 +2,7 @@ import os
 from fastapi import APIRouter
 from fastapi import Request
 from ..sot.nautobot import get_devices, get_graph_ql, get_device_id
-from ..helper.dict import get_value_from_dict
+from ..helper import helper
 
 
 router = APIRouter(
@@ -39,7 +39,7 @@ async def get_ip_of_device(device: str):
     """
     request_args = {'name': device}
     data = get_graph_ql('ipaddress_by_name_site_role_summary', request_args)
-    return get_value_from_dict(data, ['data', 'devices', 0, 'primary_ip4', 'address'])
+    return helper.get_value_from_dict(data, ['data', 'devices', 0, 'primary_ip4', 'address'])
 
 @router.get("/{device}", tags=["getdevice"])
 async def get_device(device: str, query: str | None = None):

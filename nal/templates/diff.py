@@ -2,7 +2,6 @@ import difflib
 import os.path
 from ..templates.main import render_config
 from ..sot.nautobot import get_high_level_data_model
-from ..config.nal import read_config
 
 
 def get_diff(device, old, new):

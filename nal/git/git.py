@@ -1,11 +1,11 @@
-from ..config.nal import read_config
+from ..helper import helper
 from pathlib import Path
 import git
 
 
 def get_file(repo, filename, pull=True):
     # read config
-    config = read_config()
+    config = helper.read_config()
     if repo not in config['git']:
         return {"success": False, "reason": "config error; unknown repo %s" % repo}
 

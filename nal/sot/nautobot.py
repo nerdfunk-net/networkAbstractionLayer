@@ -1,5 +1,5 @@
 from pynautobot import api
-from ..config.nal import read_config
+from ..helper import helper
 from ..sot import businesslogic
 
 def get_site(query_filter):
@@ -12,7 +12,7 @@ def get_site(query_filter):
     Returns:
 
     """
-    config = read_config()
+    config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     nb.http_session.verify = False
 
@@ -30,7 +30,7 @@ def get_devices(query_filter):
     Returns:
         json/object with device
     """
-    config = read_config()
+    config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     nb.http_session.verify = False
 
@@ -64,7 +64,7 @@ def get_graph_ql(query, variables={}):
     Returns:
         json object containing query data
     """
-    config = read_config()
+    config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     return nb.graphql.query(
         query=config['nautobot'][query],
@@ -81,7 +81,7 @@ def get_device_id(device):
         id (str) of device
     """
     # get ID of the device
-    config = read_config()
+    config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     nb_device = nb.dcim.devices.get(name=device)
     if nb_device:
@@ -103,7 +103,7 @@ def get_high_level_data_model(device, query='hldm'):
     Returns: json containing the hldm
 
     """
-    config = read_config()
+    config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     # get ID of the device
     nb_device = nb.dcim.devices.get(name=device)
