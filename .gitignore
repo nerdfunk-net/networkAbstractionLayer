@@ -48,3 +48,9 @@ coverage.xml
 
 # Sphinx documentation
 docs/_build/
+
+# env
+.env
+
+# config
+nal.yaml

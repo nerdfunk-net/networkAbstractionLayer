@@ -1,7 +1,8 @@
+import os
 from fastapi import APIRouter
 from fastapi import Request
 from ..sot.nautobot import get_devices, get_graph_ql, get_device_id
-
+from ..helper.dict import get_value_from_dict
 
 
 router = APIRouter(
@@ -18,15 +19,27 @@ async def get_ip_of_devices(request: Request):
         request: nautobot filter
 
     Returns:
-        list of IP adresses
+        list of IP addresses
     """
 
-    if request.query_params:
+    if request.query_params is not None:
         request_args = dict(request.query_params)
-        data = get_graph_ql('ipaddress_by_name_site_role_summary', request_args)
-        return data
+        return get_graph_ql('ipaddress_by_name_site_role_summary', request_args)
     else:
         return get_graph_ql('ipaddress_by_name_site_role_summary', {'name':''})
+
+@router.get("/ip/{device}", tags=["getdevice"])
+async def get_ip_of_device(device: str):
+    """
+
+    Args:
+
+    Returns:
+        primary IP of device or None if not existing
+    """
+    request_args = {'name': device}
+    data = get_graph_ql('ipaddress_by_name_site_role_summary', request_args)
+    return get_value_from_dict(data, ['data', 'devices', 0, 'primary_ip4', 'address'])
 
 @router.get("/{device}", tags=["getdevice"])
 async def get_device(device: str, query: str | None = None):
@@ -34,11 +47,12 @@ async def get_device(device: str, query: str | None = None):
 
     Args:
         device: name of device
-        query: either grapgql or api
+        query: either graphql or api
 
     Returns: json of specified device
 
     """
+
     result = {'filter': {'name': device}, 'count': 0}
     if query == 'graphql':
         result['query'] = query

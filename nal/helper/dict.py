@@ -1,17 +1,3 @@
-import yaml
-
-
-config_file = "./nal.yaml"
-
-
-def read_config():
-    """
-    read config from file
-    Returns: json
-    """
-    with open(config_file) as f:
-        return yaml.safe_load(f.read())
-
 
 def get_value_from_dict(dictionary, keys):
 
@@ -29,6 +15,3 @@ def get_value_from_dict(dictionary, keys):
             return None
 
     return nested_dict
-
-
-

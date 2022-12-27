@@ -1,8 +1,10 @@
+import os
 from fastapi import Depends, FastAPI
 from fastapi.security.api_key import APIKey
 from .internal import admin
 from .routers import getconfig, getdevice, onboarding, getter, hldm, lldm
 from .auth import auth
+from dotenv import load_dotenv, dotenv_values
 
 
 description = """
@@ -17,6 +19,13 @@ and nautobot respectively our mini aps and other sources of truth
 # uvicorn nal.main:app --port 8000 --host 127.0.0.1 (--reload)
 #
 # in the upper directory
+
+# Get the path to the directory this file is in
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+# Connect the path with your '.env' file name
+load_dotenv(os.path.join(BASEDIR, '.env'))
+# you can get the env variable by using var = os.getenv('varname')
+
 app = FastAPI(
     title="Network Abstraction Layer",
     description=description,
