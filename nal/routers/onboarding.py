@@ -201,6 +201,14 @@ async def update_interface(config: UpdateInterfaceModel):
     return result
 
 
+@router.post("/updateconnection", tags=["onboarding"])
+async def update_connection(config: NameAndConfigModel):
+    result = onboarding.update_connection_values(
+        config.config
+    )
+    return result
+
+
 @router.post("/updatedevice", tags=["onboarding"])
 async def update_interface(config: NameAndConfigModel):
 

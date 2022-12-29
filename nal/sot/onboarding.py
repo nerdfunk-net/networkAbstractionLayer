@@ -249,6 +249,7 @@ def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm
     except Exception as exc:
         return {'success': False, 'reason': 'got exception %s' % exc}
 
+
 def update_interface_values(name, interface, newconfig):
 
     config = helper.read_config()
@@ -315,6 +316,7 @@ def update_interface_values(name, interface, newconfig):
         return {'success': True, 'message': 'interface updated'}
     else:
         return {'success': False, 'reason': 'interface not updated (values identical?)'}
+
 
 def update_device_values(name, newconfig):
 
@@ -411,6 +413,7 @@ def update_device_values(name, newconfig):
     else:
         return {'success': False, 'reason': 'device not updated (values identical?)'}
 
+
 def update_site_values(slug, newconfig):
 
     config = helper.read_config()
@@ -457,6 +460,7 @@ def update_site_values(slug, newconfig):
     else:
         return {'success': False, 'reason': 'site not updated (values identical?)'}
 
+
 def update_manufacturer_values(slug, newconfig):
 
     config = helper.read_config()
@@ -483,12 +487,11 @@ def update_manufacturer_values(slug, newconfig):
     else:
         return {'success': False, 'reason': 'manufacturer not updated (values identical?)'}
 
+
 def update_platform_values(slug, newconfig):
 
     config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    print (newconfig)
 
     nb_platform = nb.dcim.platforms.get(slug=slug)
     if nb_platform is  None:
@@ -518,6 +521,54 @@ def update_platform_values(slug, newconfig):
         return {'success': True, 'message': 'platform updated'}
     else:
         return {'success': False, 'reason': 'platform not updated (values identical?)'}
+
+
+def update_connection_values(newconfig):
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    print(newconfig)
+
+    # get side a
+    side_a = nb.dcim.devices.get(name=newconfig['side_a'])
+    if not side_a:
+        return {'success': False, 'reason': 'unknown device %s' % newconfig['side_a']}
+
+    # get side b
+    side_b = nb.dcim.devices.get(name=newconfig['side_b'])
+    if not side_b:
+        return {'success': False, 'reason': 'unknown device %s' % newconfig['side_b']}
+
+    # get interface a
+    interface_a = nb.dcim.interfaces.get(
+        device_id=side_a.id,
+        name=newconfig['interface_a']
+    )
+    if interface_a is None:
+        return {'success': False, 'reason': 'unknown interface %s' % newconfig['interface_a']}
+
+    # get interface b
+    interface_b = nb.dcim.interfaces.get(
+        device_id=side_b.id,
+        name=newconfig['interface_b']
+    )
+    if interface_b is None:
+        return {'success': False, 'reason': 'unknown interface %s' % newconfig['interface_b']}
+
+    try:
+        # now create connection
+        nb.dcim.cables.create(
+            termination_a_type="dcim.interface",
+            termination_a_id=interface_a.id,
+            termination_b_type="dcim.interface",
+            termination_b_id=interface_b.id,
+            type="cat5e",
+            status="connected"
+        )
+        return {'success': True, 'message': 'connection added to sot'}
+    except Exception as exc:
+        return {'success': False, 'reason': 'got exception %s' % exc}
 
 
 def get_choices(item):

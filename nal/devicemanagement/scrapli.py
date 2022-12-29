@@ -84,7 +84,6 @@ def show_command(host, command, request_args={}):
     if not result['success']:
         return result
 
-    command = "show cdp neighbors"
     conn = Scrapli(**device)
     conn.open()
     response = conn.send_command("show %s" % command)
