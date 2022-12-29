@@ -1,5 +1,5 @@
 import jinja2
-
+from ..helper import helper
 
 additional_newline = ["interface"]
 
@@ -52,7 +52,7 @@ def render_config(device, device_config):
     """
 
     # set default values
-    config = read_config()
+    config = helper.read_config()
     if 'platform' in device_config['data']['device']:
         device_platform = device_config['data']['device']['platform']['slug']
     else:

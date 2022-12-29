@@ -15,9 +15,9 @@ getconfig
 from fastapi import APIRouter, Request
 from enum import Enum
 from ..templates.main import render_config, get_section
-from ..templates.diff import get_diff
 from ..helper import helper
 from ..sot import nautobot as sot
+from ..devicemanagement import scrapli as dm
 
 # define router
 router = APIRouter(
@@ -47,7 +47,7 @@ async def get_config_diff(device: str, old: Configtype, new: Configtype):
     Returns:
         diff between two configs
     """
-    return get_diff(device, old, new)
+    return helper.get_diff(device, old, new)
 
 
 @router.get("/{device}/", tags=["getconfig"])
@@ -98,25 +98,6 @@ async def get_config_of_section(device: str,
     return get_config(device, configtype.value, section, request_args)
 
 
-def get_primary_ip(device):
-    """
-
-    Args:
-        device: hostname
-
-    Returns: primary ip of device
-
-    """
-
-    request_args = {'name': device}
-    data = sot.get_graph_ql('ipaddress_by_name_site_role_summary', request_args)
-    cidr = helper.get_value_from_dict(data, ['data', 'devices', 0, 'primary_ip4', 'address'])
-    # nautobot returns the IP as cidr ('/' included)
-    if cidr is not None and '/' in cidr:
-        return cidr.split('/')[0]
-    else:
-        return cidr
-
 def get_config(device, configtype, section="", request_args=None):
     """
 
@@ -132,41 +113,18 @@ def get_config(device, configtype, section="", request_args=None):
 
     if request_args is None:
         request_args = {}
-    result = {'device': device, 'configtype': configtype}
+
+    # set basic properties of the result dict
+    result = {'device': device,
+              'configtype': configtype,
+              'config': None}
 
     if configtype == 'intended':
         device_config = sot.get_low_level_data_model(device=device, query='hldm')
-        config = render_config(device, device_config)
+        result['config'] = render_config(device, device_config)
     elif configtype == 'running' or configtype == 'startup':
-        nal_config = helper.read_config()
-
-        # get primary IP of device
-        primary_ip4 = get_primary_ip(device)
-        if primary_ip4 is None:
-            result['note'] = "no primary IP found; trying %s instead" % device
-            primary_ip4 = device
-        result['primary_ip4'] = primary_ip4
-
-        # now check profile to use
-        profile = 'default'
-        if 'profile' in request_args:
-            profile = request_args['profile']
-        account = helper.get_profile(nal_config, profile)
-        if account['success']:
-            result['username'] = account['username']
-            # last but not least: try to get the config
-            gdc = helper.get_device_config(primary_ip4,
-                                  account['username'],
-                                  account['password'],
-                                  configtype)
-            result['success'] = gdc['success']
-            config = gdc['config']
-            # error management in case of exception
-            if 'exception' in gdc:
-                result['exception'] = gdc['exception']
-        else:
-            result['success'] = False
-            result['reason'] = "wrong password, salt or encryption key"
+        cnf = dm.get_device_config(device, configtype)
+        result.update(cnf)
 
     elif configtype == "backup":
         config = "backup"
@@ -176,6 +134,5 @@ def get_config(device, configtype, section="", request_args=None):
         result['config'] = get_section(config, section)
     else:
         result['configtype'] = configtype
-        result['config'] = config
 
     return result

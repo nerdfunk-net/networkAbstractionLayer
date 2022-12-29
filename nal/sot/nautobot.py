@@ -2,6 +2,7 @@ from pynautobot import api
 from ..helper import helper
 from ..sot import businesslogic
 
+
 def get_site(query_filter):
     """
     returns site using specified filter
@@ -133,3 +134,31 @@ def get_low_level_data_model(device: object, query: object = 'hldm') -> object:
 
     return lldm
 
+
+def get_polling_properties(device):
+    """
+    get primary IP and platform from sot
+
+    Args:
+        device: hostname
+
+    Returns:
+        primary ip and platform of device
+
+    """
+
+    primary = None
+    platform = None
+
+    request_args = {'name': device}
+    data = get_graph_ql('polling_properties_by_name_site_role_summary', request_args)
+    cidr = helper.get_value_from_dict(data, ['data', 'devices', 0, 'primary_ip4', 'address'])
+    # nautobot returns the IP as cidr ('/' included)
+    if cidr is not None and '/' in cidr:
+        primary = cidr.split('/')[0]
+    else:
+        primary = cidr
+
+    platform = helper.get_value_from_dict(data, ['data', 'devices', 0, 'platform', 'slug'])
+
+    return primary, platform

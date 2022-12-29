@@ -9,8 +9,8 @@ from dotenv import load_dotenv, dotenv_values
 
 description = """
 
-The Network Abstraction Layer (nal) is the layer between our mini python apps
-and nautobot respectively our mini aps and other sources of truth
+The Network Abstraction Layer (nal) is the layer between the mini python apps
+and nautobot respectively the mini apps and other sources of truth
 
 """
 
@@ -22,7 +22,7 @@ and nautobot respectively our mini aps and other sources of truth
 
 # Get the path to the directory this file is in
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
-# Connect the path with your '.env' file name
+# Connect the path with the '.env' file name
 load_dotenv(os.path.join(BASEDIR, '.env'))
 # you can get the env variable by using var = os.getenv('varname')
 

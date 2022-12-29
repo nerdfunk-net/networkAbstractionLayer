@@ -1,11 +1,12 @@
 import yaml
-import napalm
 import os
 import base64
+import difflib
+import os.path
+from ..sot.nautobot import get_high_level_data_model
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
 
 config_file = "./nal.yaml"
 
@@ -20,7 +21,6 @@ def read_config():
 
 
 def get_value_from_dict(dictionary, keys):
-
     if dictionary is None:
         return None
 
@@ -35,49 +35,6 @@ def get_value_from_dict(dictionary, keys):
             return None
 
     return nested_dict
-
-
-def get_device_config(host,
-                      username,
-                      password,
-                      configtype="running",
-                      devicetype="ios",
-                      port=22):
-    """
-    Login to device and get config
-    Args:
-        host:
-        username:
-        password:
-        devicetype:
-        port:
-
-    Returns:
-        device config
-    """
-
-    config = None
-    result = {}
-
-    driver = napalm.get_network_driver(devicetype)
-    device = driver(
-        hostname=host,
-        username=username,
-        password=password,
-        optional_args={"port": port},
-    )
-
-    try:
-        device.open()
-        config = device.get_config(retrieve=configtype)[configtype]
-        result['success'] = True
-        result['config'] = config
-    except Exception as e:
-        result['success'] = False
-        result['exception'] = "%s" % e
-        result['config'] = None
-
-    return result
 
 
 def decrypt_password(password):
@@ -114,7 +71,7 @@ def decrypt_password(password):
     f = Fernet(key)
     # decrypt and return
     try:
-        return f.decrypt(password_bytes)
+        return f.decrypt(password_bytes).decode("utf-8")
     except:
         return None
 
@@ -147,5 +104,56 @@ def get_profile(config, profilename='default'):
         result.update({'success': False, 'reason': 'wrong password'})
     else:
         result.update({'success': True, 'username': username, 'password': clear_password})
+
+    return result
+
+
+def get_diff(device, old, new):
+    """
+    compares two configs and returns diff
+    Args:
+        device: hostname
+        old: old config
+        new: new config
+
+    Returns:
+        diff of config
+    """
+
+    # read nal config
+    config = read_config()
+
+    intended_config = ""
+    result = {'new': new, 'old': old}
+
+    # read intended config of device if we need it
+    if old == 'intended' or new == 'intended':
+        intended_config = get_high_level_data_model(device, 'hldm')
+
+    if old == 'intended':
+        old_config = render_config(device, intended_config).split('\n')
+    elif old == 'backup':
+        filename = "%s/%s" % (config['inventory']['backup_configs'], device)
+        if os.path.isfile(filename):
+            with open(filename) as f:
+                old_config = f.read().splitlines()
+        else:
+            result['diff'] = "%s not found" % filename
+            result['error'] = True
+            return result
+
+    if new == 'intended':
+        new_config = render_config(device, intended_config).split('\n')
+    elif new == 'backup':
+        filename = "%s/%s" % (config['inventory']['backup_configs'], device)
+        if os.path.isfile(filename):
+            with open(filename) as f:
+                new_config = f.read().splitlines()
+        else:
+            result['diff'] = "%s not found" % filename
+            result['error'] = True
+            return result
+
+    result['diff'] = difflib.unified_diff(old_config, new_config, old, new)
 
     return result
