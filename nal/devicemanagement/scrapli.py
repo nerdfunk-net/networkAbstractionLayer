@@ -14,20 +14,20 @@ def get_device(host, request_args={}):
 
     """
 
-    nal_config = helper.read_config()
+    config = helper.read_config()
     result = {'success': True}
 
     # check which profile to use
     profile = 'default'
     if 'profile' in request_args:
         profile = request_args['profile']
-    account = helper.get_profile(nal_config, profile)
+    account = helper.get_profile(config, profile)
     if not account['success']:
         result.update({'success': False,
                        'reason': "wrong password, salt or encryption key",
                        'profile': profile,
                        'config': None})
-        return (None, result)
+        return None, result
 
     # get IP and platform from sot
     (primary_ip, napalm_driver) = sot.get_polling_properties(host)
@@ -38,7 +38,7 @@ def get_device(host, request_args={}):
     # we have to map the napalm driver to our srapli driver / platform
     #
     # napalm | scrapli
-    # -------|--------
+    # -------|------------
     # ios    | cisco_iosxe
     # iosxr  | cisco_iosxr
     # nxos   | cisco_nxos
@@ -53,15 +53,16 @@ def get_device(host, request_args={}):
                        'username': account['username'],
                        'reason': "got wrong napalm driver %s" % napalm_driver,
                        'config': None})
-        return (None, result)
+        return None, result
 
     # initialize scrapli
     # use
     #
-    # ssh_config_file: True
+    # ssh_config_file: True or
+    # ssh_config_file: "~/.ssh/ssh_config"
     #
     # to avoid login problems with old systems
-    # add the follwoing config to ~/.ssh/ssh_config
+    # add the following config to ~/.ssh/ssh_config or /etc/ssh/ssh_config
     #
     # KexAlgorithms diffie-hellman-group-exchange-sha1,diffie-hellman-group14-sha1
     # HostKeyAlgorithms ssh-rsa

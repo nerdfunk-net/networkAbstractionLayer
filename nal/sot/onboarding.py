@@ -1,6 +1,21 @@
 from pynautobot import api
 from ..helper import helper
 
+"""
+ +------+-----+------------------------+
+ + id   |  0  |  added to sot          |
+ +      |  1  |  already in sot        |
+ +      |  2  |  item updated          |
+ +      |  3  |  no changes            |
+ +      |     |                        |
+ +      |     |                        |
+ +      |     |                        |
+ +      |     |                        |
+ +------+-----+------------------------+
+
+"""
+
+
 def add_site(name, slug, status):
 
     config = helper.read_config()
@@ -8,7 +23,7 @@ def add_site(name, slug, status):
 
     nb_site = nb.dcim.sites.get(slug=slug)
     if nb_site is not None:
-        return {'success': False, 'reason': 'site %s already in sot' % name}
+        return {'success': False, 'error': 'site %s already in sot' % name}
 
     try:
         nb_site = nb.dcim.sites.create(
@@ -18,13 +33,13 @@ def add_site(name, slug, status):
         )
         return {'success': True, 'message': 'site %s added to sot' % name}
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False, 'error': 'got exception %s' % exc}
 
 
 def add_device(name, site, role, devicetype, manufacturer, platform, status='active'):
 
     """
-    adds device to nautobot
+    add device to nautobot
 
     Args:
         name:
@@ -36,7 +51,7 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
         status:
 
     Returns:
-        json containing result
+        result with success (true, false) and error if success: false
     """
 
     config = helper.read_config()
@@ -48,27 +63,32 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
         # check site
         nb_site = nb.dcim.sites.get(slug=site)
         if nb_site is None:
-            return {'success': False, 'reason': 'unknown site %s' % site}
+            return {'success': False,
+                    'error': 'unknown site %s' % site}
 
         # check role
         nb_role = nb.dcim.device_roles.get(slug=role)
         if nb_role is None:
-            return {'success': False, 'reason': 'unknown role %s' % role}
+            return {'success': False,
+                    'error': 'unknown role %s' % role}
 
         # check device type
         nb_devicetype = nb.dcim.device_types.get(slug=devicetype)
         if nb_devicetype is None:
-            return {'success': False, 'reason': 'unknown type %s' % devicetype}
+            return {'success': False,
+                    'error': 'unknown type %s' % devicetype}
 
         # check manufacturer
         nb_manufacturer = nb.dcim.manufacturers.get(slug=manufacturer)
         if nb_manufacturer is None:
-            return {'success': False, 'reason': 'unknown manufacturer %s' % manufacturer}
+            return {'success': False,
+                    'error': 'unknown manufacturer %s' % manufacturer}
 
         # check platform
         nb_platform = nb.dcim.platforms.get(slug=platform)
         if nb_platform is None:
-            return {'success': False, 'reason': 'unknown platform %s' % platform}
+            return {'success': False,
+                    'error': 'unknown platform %s' % platform}
 
         try:
             nb_device = nb.dcim.devices.create(
@@ -81,11 +101,16 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
                 status=status,
                 )
 
-            return {'success': True,'message':'device %s added to sot' % name}
+            return {'success': True,
+                    'id': 0,
+                    'log': 'device %s added to sot' % name}
         except Exception as exc:
-            return {'success': False, 'reason': 'got exception %s' % exc}
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
     else:
-        return {'success': False,'reason':'device already in sot'}
+        return {'success': True,
+                'id': 1,
+                'log': 'device already in sot'}
 
 
 def add_interface(name, interface, interfacetype, enabled=True, description="None"):
@@ -107,7 +132,8 @@ def add_interface(name, interface, interfacetype, enabled=True, description="Non
     # get device id
     nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
-        return {'success': False,'reason':'unknown device'}
+        return {'success': False,
+                'error': 'unknown device'}
 
     # check if interface is already part of device
     nb_interface = nb.dcim.interfaces.get(
@@ -125,11 +151,17 @@ def add_interface(name, interface, interfacetype, enabled=True, description="Non
                 type=interfacetype,
                 enabled=enabled
             )
-            return {'success': True, 'message': 'interface %s added to sot' % interface}
+            return {'success': True,
+                    'id': 0,
+                    'log': 'interface %s added to sot' % interface}
         except Exception as exc:
-            return {'success': False, 'reason': 'got exception %s' % exc}
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
     else:
-        return {'success': False, 'reason': 'interface already in sot'}
+        return {'success': True,
+                'id': 1,
+                'log': 'interface already in sot'}
+
 
 def add_address(name, interface, address):
 
@@ -139,15 +171,17 @@ def add_address(name, interface, address):
     # get device id
     nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
-        return {'success': False, 'reason': 'unknown device'}
+        return {'success': False,
+                'error': 'unknown device %s' % name}
 
     # get ip address
     nb_ipadd = nb.ipam.ip_addresses.get(
         address=address
     )
-
     if nb_ipadd:
-        return {'success': False,'reason':'ip address already in sot'}
+        return {'success': True,
+                'id': 1,
+                'log': 'ip address already in sot'}
 
     # check if interface is known
     nb_interface = nb.dcim.interfaces.get(
@@ -166,11 +200,16 @@ def add_address(name, interface, address):
                     device=name,
                     name=interface).id
             )
-            return {'success': True, 'message': 'address %s added to sot' % address}
+            return {'success': True,
+                    'id': 0,
+                    'log': 'address %s added to sot' % address}
         except Exception as exc:
-            return {'success': False, 'reason': 'got exception %s' % exc}
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
     else:
-        return {'success': False, 'reason': 'unknown interface %s' % interface}
+        return {'success': False,
+                'error': 'unknown interface %s' % interface}
+
 
 def add_vlan(vid, name, status, site):
 
@@ -179,7 +218,8 @@ def add_vlan(vid, name, status, site):
 
     (nb_vlan, success) = get_vlan(nb, vid, site)
     if not success:
-        return {'success': False, 'reason': 'unknown site %s' % site}
+        return {'success': False,
+                'error': 'unknown site %s' % site}
 
     if not nb_vlan:
         try:
@@ -196,11 +236,17 @@ def add_vlan(vid, name, status, site):
                     vid=vid,
                     status=status
                 )
-            return {'success': True, 'message': 'vlan %s/%s added to sot' % (name, vid)}
+            return {'success': True,
+                    'id': 0,
+                    'log': 'vlan %s/%s added to sot' % (name, vid)}
         except Exception as exc:
-            return {'success': False, 'reason': 'got exception %s' % exc}
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
     else:
-        return {'success': False, 'reason': 'vlan already in sot'}
+        return {'success': True,
+                'id': 1,
+                'log': 'vlan already in sot'}
+
 
 def add_manufacturer(name, slug):
 
@@ -209,16 +255,22 @@ def add_manufacturer(name, slug):
 
     nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
     if nb_manufacturer:
-        return {'success': False, 'reason': 'manufacturer %s already in sot' % name}
+        return {'success': False,
+                'id': 1,
+                'log': 'manufacturer %s already in sot' % name}
 
     try:
         nb_manufacturer = nb.dcim.manufacturers.create(
             name=name,
             slug=slug,
         )
-        return {'success': True, 'message': 'manufacturer added to sot' % name}
+        return {'success': True,
+                'id': 0,
+                'message': 'manufacturer added to sot' % name}
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
+
 
 def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm_args=""):
 
@@ -227,13 +279,16 @@ def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm
 
     nb_platform = nb.dcim.platforms.get(slug=slug)
     if nb_platform:
-        return {'success': False, 'reason': 'platform %s already in sot' % name}
+        return {'success': True,
+                'id': 1,
+                'log': 'platform %s already in sot' % name}
 
     manufacturer_id = None
     if len(manufacturer) > 0:
         nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
         if nb_manufacturer is None:
-            return {'success': False, 'reason': 'manufacturer %s is not in sot' % manufacturer}
+            return {'success': False,
+                    'error': 'manufacturer %s is not in sot' % manufacturer}
         manufacturer_id = nb_manufacturer.id
 
     try:
@@ -245,20 +300,25 @@ def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm
             napalm_driver=napalm_driver,
             napalm_args=napalm_args
         )
-        return {'success': True, 'message': 'platform %s added to sot' % name}
+        return {'success': True,
+                'id': 0,
+                'log': 'platform %s added to sot' % name}
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
 
 def update_interface_values(name, interface, newconfig):
 
     config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    values = ', '.join(map(str, newconfig.values()))
 
     # get device
     nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
-        return {'success': False, 'reason': 'unknown device'}
+        return {'success': False,
+                'error': 'unknown device'}
 
     # get interface
     interface = nb.dcim.interfaces.get(
@@ -266,7 +326,8 @@ def update_interface_values(name, interface, newconfig):
         name=interface
     )
     if interface is None:
-        return {'success': False, 'reason': 'unknown interface %s' % interface}
+        return {'success': False,
+                'error': 'unknown interface %s' % interface}
 
     if 'lag' in newconfig:
         lag_interface = nb.dcim.interfaces.get(
@@ -284,7 +345,8 @@ def update_interface_values(name, interface, newconfig):
         if success and untagged_vlan is not None:
             interface.untagged_vlan = untagged_vlan
         else:
-            return {'success': False, 'reason': 'unknown untagged vlan'}
+            return {'success': False,
+                    'error': 'unknown untagged vlan'}
 
     if 'tagged' in newconfig:
         vlans = newconfig['tagged'].split(",")
@@ -294,7 +356,8 @@ def update_interface_values(name, interface, newconfig):
             if success and tv is not None:
                 tagged.append(tv)
             else:
-                return {'success': False, 'reason': 'unknown tagged vlan %s' % vlan}
+                return {'success': False,
+                        'error': 'unknown tagged vlan %s' % vlan}
         interface.tagged_vlans = tagged
 
     if 'tags' in newconfig:
@@ -305,28 +368,36 @@ def update_interface_values(name, interface, newconfig):
                 tags = [nb.extras.tags.get(name=tag).id for tag in newconfig["tags"].split(',')]
                 interface.tags = tags
             except Exception as exc:
-                return {'success': False, 'reason': 'unknown tag found; exception: %s' % exc}
+                return {'success': False,
+                        'error': 'unknown tag found; exception: %s' % exc}
 
     try:
         success = interface.save()
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
     if success:
-        return {'success': True, 'message': 'interface updated'}
+        return {'success': True,
+                'id': 2,
+                'log': 'interface updated (%s)' % values}
     else:
-        return {'success': False, 'reason': 'interface not updated (values identical?)'}
+        return {'success': True,
+                'id': 3,
+                'error': 'no changes made on interface'}
 
 
 def update_device_values(name, newconfig):
 
     config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    values = ', '.join(map(str, newconfig.values()))
 
     # get device
     nb_device = nb.dcim.devices.get(name=name)
     if not nb_device:
-        return {'success': False, 'reason': 'unknown device %s' % name}
+        return {'success': False,
+                'error': 'unknown device %s' % name}
 
     if 'name' in newconfig:
         nb_device.name = newconfig['name']
@@ -337,13 +408,15 @@ def update_device_values(name, newconfig):
     if 'device_type' in newconfig:
         nb_devicetype = nb.dcim.device_types.get(slug=newconfig['device_type'])
         if nb_devicetype is None:
-            return {'success': False, 'reason': 'unknown type %s' % newconfig['device_type']}
+            return {'success': False,
+                    'error': 'unknown type %s' % newconfig['device_type']}
         nb_device.device_type = nb_devicetype.id
 
     if 'device_role' in newconfig:
         nb_role = nb.dcim.device_roles.get(slug=newconfig['device_role'])
         if nb_role is None:
-            return {'success': False, 'reason': 'unknown role %s' % newconfig['device_role']}
+            return {'success': False,
+                    'error': 'unknown role %s' % newconfig['device_role']}
         nb_device.device_role = nb_role.id
 
     if 'serial' in newconfig:
@@ -352,25 +425,29 @@ def update_device_values(name, newconfig):
     if 'site' in newconfig:
         nb_site = nb.dcim.sites.get(slug=newconfig['site'])
         if nb_site is None:
-            return {'success': False, 'reason': 'unknown site %s' % newconfig['site']}
+            return {'success': False,
+                    'error': 'unknown site %s' % newconfig['site']}
         nb_device.site = nb_site
 
     if 'location' in newconfig:
         nb_location = nb.dcim.locations.get(slug=newconfig['location'])
         if nb_location is None:
-            return {'success': False, 'reason': 'unknown location %s' % newconfig['location']}
+            return {'success': False,
+                    'error': 'unknown location %s' % newconfig['location']}
         nb_device.location = nb_location.id
 
     if 'manufacturer' in newconfig:
         nb_manufacturer = nb.dcim.manufacturers.get(slug=newconfig['manufacturer'])
         if nb_manufacturer is None:
-            return {'success': False, 'reason': 'unknown manufacturer %s' % newconfig['manufacturer']}
+            return {'success': False,
+                    'error': 'unknown manufacturer %s' % newconfig['manufacturer']}
         nb_device.manufacturer = nb_manufacturer.id
 
     if 'platform' in newconfig:
         nb_platform = nb.dcim.platforms.get(slug=newconfig['platform'])
         if nb_platform is None:
-            return {'success': False, 'reason': 'unknown platform %s' % newconfig['platform']}
+            return {'success': False,
+                    'error': 'unknown platform %s' % newconfig['platform']}
         nb_device.platform = nb_platform.id
 
     if 'primary_ip4' in newconfig:
@@ -406,12 +483,17 @@ def update_device_values(name, newconfig):
     try:
         success = nb_device.save()
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
     if success:
-        return {'success': True, 'message': 'device updated'}
+        return {'success': True,
+                'id': 2,
+                'log': 'device updated (%s)' % values}
     else:
-        return {'success': False, 'reason': 'device not updated (values identical?)'}
+        return {'success': True,
+                'id': 3,
+                'log': 'no changes made to device'}
 
 
 def update_site_values(slug, newconfig):
@@ -421,7 +503,8 @@ def update_site_values(slug, newconfig):
 
     nb_site = nb.dcim.sites.get(slug=slug)
     if nb_site is  None:
-        return {'success': False, 'reason': 'site %s is not in sot' % name}
+        return {'success': False,
+                'error': 'site %s is not in sot' % name}
 
     if 'slug' in newconfig:
         nb_site.slug = newconfig['slug']
@@ -453,12 +536,17 @@ def update_site_values(slug, newconfig):
     try:
         success = nb_site.save()
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
     if success:
-        return {'success': True, 'message': 'site updated'}
+        return {'success': True,
+                'id': 2,
+                'log': 'site updated'}
     else:
-        return {'success': False, 'reason': 'site not updated (values identical?)'}
+        return {'success': True,
+                'id': 3,
+                'log': 'no changes made to site'}
 
 
 def update_manufacturer_values(slug, newconfig):
@@ -468,7 +556,8 @@ def update_manufacturer_values(slug, newconfig):
 
     nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
     if nb_manufacturer is  None:
-        return {'success': False, 'reason': 'manufacturer %s is not in sot' % slug}
+        return {'success': False,
+                'error': 'manufacturer %s is not in sot' % slug}
 
     if 'slug' in newconfig:
         nb_manufacturer.slug = newconfig['slug']
@@ -480,12 +569,17 @@ def update_manufacturer_values(slug, newconfig):
     try:
         success = nb_manufacturer.save()
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
     if success:
-        return {'success': True, 'message': 'manufacturer updated'}
+        return {'success': True,
+                'id': 1,
+                'log': 'manufacturer updated'}
     else:
-        return {'success': False, 'reason': 'manufacturer not updated (values identical?)'}
+        return {'success': True,
+                'id': 3,
+                'log': 'no changes made to manufacturer'}
 
 
 def update_platform_values(slug, newconfig):
@@ -495,7 +589,7 @@ def update_platform_values(slug, newconfig):
 
     nb_platform = nb.dcim.platforms.get(slug=slug)
     if nb_platform is  None:
-        return {'success': False, 'reason': 'platform %s is not in sot' % slug}
+        return {'success': False, 'error': 'platform %s is not in sot' % slug}
 
     if 'slug' in newconfig:
         nb_platform.slug = newconfig['slug']
@@ -515,12 +609,17 @@ def update_platform_values(slug, newconfig):
     try:
         success = nb_platform.save()
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
     if success:
-        return {'success': True, 'message': 'platform updated'}
+        return {'success': True,
+                'id': 1,
+                'log': 'platform updated'}
     else:
-        return {'success': False, 'reason': 'platform not updated (values identical?)'}
+        return {'success': True,
+                'id': 3,
+                'log': 'no changes made to platform'}
 
 
 def update_connection_values(newconfig):
@@ -528,17 +627,17 @@ def update_connection_values(newconfig):
     config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
-    print(newconfig)
-
     # get side a
     side_a = nb.dcim.devices.get(name=newconfig['side_a'])
     if not side_a:
-        return {'success': False, 'reason': 'unknown device %s' % newconfig['side_a']}
+        return {'success': False,
+                'error': 'unknown device %s' % newconfig['side_a']}
 
     # get side b
     side_b = nb.dcim.devices.get(name=newconfig['side_b'])
     if not side_b:
-        return {'success': False, 'reason': 'unknown device %s' % newconfig['side_b']}
+        return {'success': False,
+                'error': 'unknown device %s' % newconfig['side_b']}
 
     # get interface a
     interface_a = nb.dcim.interfaces.get(
@@ -546,7 +645,8 @@ def update_connection_values(newconfig):
         name=newconfig['interface_a']
     )
     if interface_a is None:
-        return {'success': False, 'reason': 'unknown interface %s' % newconfig['interface_a']}
+        return {'success': False,
+                'error': 'unknown interface %s' % newconfig['interface_a']}
 
     # get interface b
     interface_b = nb.dcim.interfaces.get(
@@ -554,7 +654,8 @@ def update_connection_values(newconfig):
         name=newconfig['interface_b']
     )
     if interface_b is None:
-        return {'success': False, 'reason': 'unknown interface %s' % newconfig['interface_b']}
+        return {'success': False,
+                'error': 'unknown interface %s' % newconfig['interface_b']}
 
     try:
         # now create connection
@@ -566,9 +667,12 @@ def update_connection_values(newconfig):
             type="cat5e",
             status="connected"
         )
-        return {'success': True, 'message': 'connection added to sot'}
+        return {'success': True,
+                'id': 0,
+                'log': 'connection added to sot'}
     except Exception as exc:
-        return {'success': False, 'reason': 'got exception %s' % exc}
+        return {'success': False,
+                'error': 'got exception %s' % exc}
 
 
 def get_choices(item):
@@ -580,6 +684,7 @@ def get_choices(item):
         return nb.dcim.devices.choices()
     elif item == "interfaces":
         return nb.dcim.interfaces.choices()
+
 
 def get_vlan(nb, vid, site=""):
 
@@ -601,7 +706,8 @@ def get_vlan(nb, vid, site=""):
 
     return (nb_vlan, True)
 
-def update_device_json(name, newconfig):
-
-    print (newconfig)
-    return {}
+#
+# def update_device_json(name, newconfig):
+#
+#     print(newconfig)
+#     return {}
