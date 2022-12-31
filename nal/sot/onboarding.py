@@ -657,22 +657,34 @@ def update_connection_values(newconfig):
         return {'success': False,
                 'error': 'unknown interface %s' % newconfig['interface_b']}
 
-    try:
-        # now create connection
-        nb.dcim.cables.create(
+    cable = nb.dcim.cables.get(
             termination_a_type="dcim.interface",
             termination_a_id=interface_a.id,
             termination_b_type="dcim.interface",
             termination_b_id=interface_b.id,
-            type="cat5e",
-            status="connected"
         )
+
+    if cable is None:
+        try:
+            # now create connection
+            nb.dcim.cables.create(
+                termination_a_type="dcim.interface",
+                termination_a_id=interface_a.id,
+                termination_b_type="dcim.interface",
+                termination_b_id=interface_b.id,
+                type="cat5e",
+                status="connected"
+            )
+            return {'success': True,
+                    'id': 0,
+                    'log': 'connection added to sot'}
+        except Exception as exc:
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
+    else:
         return {'success': True,
-                'id': 0,
-                'log': 'connection added to sot'}
-    except Exception as exc:
-        return {'success': False,
-                'error': 'got exception %s' % exc}
+                'id': 1,
+                'log': 'cable already in sot'}
 
 
 def get_choices(item):
