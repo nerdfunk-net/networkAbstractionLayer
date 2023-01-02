@@ -13,8 +13,52 @@ see new files that are not added to git
 git ls-files . --exclude-standard --others
 git status -u
 
+show branches
+git log --graph --pretty=oneline --abbrev-commit
 
 """
+
+
+def switch_branch(repo_name, branch):
+
+    # read config
+    config = helper.read_config()
+    if repo_name not in config['git']:
+        return {"success": False,
+                "error": "config error; no git entry for %s found" % repo_name}
+
+    # path to local directory of the repo
+    local_git_path = helper.get_value_from_dict(config, ['git',
+                                                         repo_name,
+                                                         'local_gitdir'])
+    if local_git_path is None:
+        return {"success": False,
+                "error": "config error; local dir of 'config_contexts' does not exists"}
+
+    # get GIT object
+    repo = git.Repo(local_git_path)
+    if repo is None:
+        return {"success": False,
+                "error": "could not get repo %s" % local_git_path}
+
+    # check if there is a branch for this device
+    remote_branches = repo.remote().refs
+    found_branch = False
+    for b in remote_branches:
+        if b.name == "origin/%s" % branch:
+            print("found branch of device %s" % branch)
+            repo.git.checkout(branch)
+            found_branch = True
+
+    if not found_branch:
+        # there is no branch for this device. Create one
+        print("creating new branch %s" % branch)
+        new_branch = repo.create_head(branch)
+        repo.git.checkout(branch)
+
+    return {'success': True,
+            'id': 0,
+            'log': "switched to %s/%s" % (repo, branch)}
 
 
 def get_file(repo, filename, pull=True):
@@ -91,30 +135,29 @@ def repo_differs(repo, branch):
     return differs
 
 
-def set_configcontext(device, newconfig):
+def edit_file(newconfig):
 
     # defaults
-    device_config = {}
-    # set id to 0 means added to sot
-    id = 0
-    logmessage = "config context added to sot"
+    content = {}
+    name_of_repo = newconfig['repo']
+    filename = newconfig['filename']
 
     # read config
     config = helper.read_config()
-    if 'config_contexts' not in config['git']:
+    if name_of_repo not in config['git']:
         return {"success": False,
-                "error": "config error; no git entry for config_contexts found"}
+                "error": "config error; no git entry for %s found" % name_of_repo}
 
     # path to local directory of the repo
     local_git_path = helper.get_value_from_dict(config, ['git',
-                                                         'config_contexts',
+                                                         name_of_repo,
                                                          'local_gitdir'])
     if local_git_path is None:
         return {"success": False,
-                "error": "config error; local dir of 'config_contexts' does not exists"}
+                "error": "config error; local dir of %s does not exists" % name_of_repo}
 
     # the content may be in a subdir of the repo
-    subdir = helper.get_value_from_dict(config, ['git', 'config_contexts', 'local_content'])
+    subdir = helper.get_value_from_dict(config, ['git', name_of_repo, 'local_content'])
     if subdir is None:
         subdir = "/"
 
@@ -130,33 +173,37 @@ def set_configcontext(device, newconfig):
             return {'success': False,
                     'error': 'got exception %s' % exc}
 
-    comment = "added %s to config_contexts" % device
-    # check if file exists
-    newfile = True
-    cc_file_name = "%s/%s/devices/%s" % (local_git_path, subdir, device)
-    if os.path.isfile(cc_file_name):
-        # file exists
-        newfile = False
-        comment = "updated %s in config_contexts" % device
+    # ew need the name of the current branch to push the update later
+    current_branch = repo.active_branch.name
 
-    if not newfile:
-        # set id to 1: updated sot
-        id = 1
-        logmessage = "config context updated in sot"
-        # check if we should overwrite the file
+    cc_file_name = "%s/%s/devices/%s" % (local_git_path, subdir, filename)
+    # check if file exists
+    if os.path.isfile(cc_file_name):
+        comment = "updated %s in %s" % (filename, name_of_repo)
+        logmessage = "%s updated in %s/%s" % (filename,
+                                              current_branch,
+                                              name_of_repo)
+        # set id to 2 means updated in sot
+        id = 2
         if newconfig.get('action') == "merge":
             # merge file on disk and new config
-            new_config = newconfig['configcontext']
+            new_config = newconfig['content']
             with open(cc_file_name) as f:
-                device_config = yaml.load(f, Loader=SafeLoader)
-            device_config.update(new_config)
+                content = yaml.load(f, Loader=SafeLoader)
+            content.update(new_config)
         else:
-            device_config = newconfig['configcontext']
+            # the config in newconfig is the one we use
+            content = newconfig['content']
     else:
-        device_config = newconfig['configcontext']
+        # it is a new file, set id to 0
+        id = 0
+        logmessage = "%s in %s/%s added to sot" % (filename,
+                                                   current_branch,
+                                                   name_of_repo)
+        content = newconfig['content']
 
     # the device_config is a dict but we need a yaml
-    yaml_config_context = yaml.dump(device_config,
+    yaml_config_context = yaml.dump(content,
                                     allow_unicode=True,
                                     default_flow_style=False)
 
@@ -174,7 +221,8 @@ def set_configcontext(device, newconfig):
     # commit changes
     repo.index.commit(comment)
     try:
-        repo.remotes.origin.push()
+        print("pushing updates to %s" % current_branch)
+        repo.remotes.origin.push(refspec=current_branch)
     except Exception as exc:
         return {'success': False,
                 'error': 'got exception %s' % exc}

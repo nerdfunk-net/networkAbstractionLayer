@@ -96,6 +96,14 @@ class SlugAndConfigModel(BaseModel):
     config: dict
 
 
+class SwitchBranchModel(BaseModel):
+    repo: str
+    branch: str
+
+
+class SimpleConfigModel(BaseModel):
+    config: dict
+
 @router.post("/addsite", tags=["onboarding"])
 async def add_site_to_sot(config: AddSiteModel):
 
@@ -249,11 +257,20 @@ async def update_platform(config: SlugAndConfigModel):
     return result
 
 
-@router.post("/setconfigcontext", tags=["onboarding"])
-async def set_configcontext(config: SlugAndConfigModel):
+@router.post("/switch_branch", tags=["onboarding"])
+async def switch_branch(config: SwitchBranchModel):
 
-    result = git.set_configcontext(
-        config.slug,
+    result = git.switch_branch(
+        config.repo,
+        config.branch
+    )
+    return result
+
+
+@router.post("/editfile", tags=["onboarding"])
+async def edit_file(config: SimpleConfigModel):
+
+    result = git.edit_file(
         config.config
     )
     return result
