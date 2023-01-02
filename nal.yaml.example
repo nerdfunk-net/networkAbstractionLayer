@@ -126,7 +126,14 @@ git:
         username: your@email
         token: "your_git_token"
         repo: "https://github.com/your_repo/sot_data.git"
-        local: "/path/to/your/sot_data"
+        local_gitdir: "/path/to/your/sot_data"
+        local_content: "/"
+    config_contexts:
+        username: your@email
+        token: "your_git_token"
+        repo: "https://github.com/your_repo/config_contexts.git"
+        local_gitdir: "/path/to/your/sot_data/config_contexts"
+        local_content: "config_contexts"
 
 templates:
     directory: "../sot_data/templates/"

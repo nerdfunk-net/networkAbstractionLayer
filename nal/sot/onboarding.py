@@ -7,12 +7,7 @@ from ..helper import helper
  +      |  1  |  already in sot        |
  +      |  2  |  item updated          |
  +      |  3  |  no changes            |
- +      |     |                        |
- +      |     |                        |
- +      |     |                        |
- +      |     |                        |
  +------+-----+------------------------+
-
 """
 
 

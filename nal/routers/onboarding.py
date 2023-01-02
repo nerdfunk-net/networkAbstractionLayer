@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, validator
-from ..sot import nautobot as sot
 from ..sot import onboarding as onboarding
+from ..git import git
 from typing import Optional
 
 
@@ -243,6 +243,16 @@ async def update_manufacturer(config: SlugAndConfigModel):
 async def update_platform(config: SlugAndConfigModel):
 
     result = onboarding.update_platform_values(
+        config.slug,
+        config.config
+    )
+    return result
+
+
+@router.post("/setconfigcontext", tags=["onboarding"])
+async def set_configcontext(config: SlugAndConfigModel):
+
+    result = git.set_configcontext(
         config.slug,
         config.config
     )
