@@ -134,6 +134,12 @@ git:
         repo: "https://github.com/your_repo/config_contexts.git"
         local_gitdir: "/path/to/your/sot_data/config_contexts"
         local_content: "config_contexts"
+    config_backup:
+        username: your@email
+        token: "your_git_token"
+        repo: "https://github.com/your_repo/config_contexts.git"
+        local_gitdir: "/path/to/your/sot_data/config_contexts"
+        local_content: "config_backups"
 
 templates:
     directory: "../sot_data/templates/"
