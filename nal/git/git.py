@@ -137,10 +137,13 @@ def repo_differs(repo, branch):
 
 def edit_file(newconfig):
 
-    # defaults
+    # init used variables
     content = {}
-    name_of_repo = newconfig['repo']
-    filename = newconfig['filename']
+    name_of_repo = newconfig.get('repo')
+    filename = newconfig.get('filename')
+    if name_of_repo is None or filename is None:
+        return {"success": False,
+                "error": "config error; no repo or filename found"}
 
     # read config
     config = helper.read_config()
@@ -152,6 +155,7 @@ def edit_file(newconfig):
     local_git_path = helper.get_value_from_dict(config, ['git',
                                                          name_of_repo,
                                                          'local_gitdir'])
+    # check if local path exists. If not raise an error
     if local_git_path is None:
         return {"success": False,
                 "error": "config error; local dir of %s does not exists" % name_of_repo}
@@ -164,7 +168,7 @@ def edit_file(newconfig):
     # pull: True => do pull before writing context
     pull = newconfig.get('pull')
 
-    # get GIT object
+    # now try to get the GIT object
     repo = git.Repo(local_git_path)
     if repo is not None and pull:
         try:
@@ -173,26 +177,27 @@ def edit_file(newconfig):
             return {'success': False,
                     'error': 'got exception %s' % exc}
 
-    # ew need the name of the current branch to push the update later
+    # we need the name of the current branch to push the update later
     current_branch = repo.active_branch.name
 
-    cc_file_name = "%s/%s/devices/%s" % (local_git_path, subdir, filename)
+    content_filename = "%s/%s/devices/%s" % (local_git_path, subdir, filename)
     # check if file exists
-    if os.path.isfile(cc_file_name):
+    if os.path.isfile(content_filename):
         comment = "updated %s in %s" % (filename, name_of_repo)
         logmessage = "%s updated in %s/%s" % (filename,
                                               current_branch,
                                               name_of_repo)
         # set id to 2 means updated in sot
         id = 2
+        # check if the content of the two dicts must be merged
         if newconfig.get('action') == "merge":
             # merge file on disk and new config
             new_config = newconfig['content']
-            with open(cc_file_name) as f:
+            with open(content_filename) as f:
                 content = yaml.load(f, Loader=SafeLoader)
             content.update(new_config)
         else:
-            # the config in newconfig is the one we use
+            # no merge; the config in newconfig is the one we use
             content = newconfig['content']
     else:
         # it is a new file, set id to 0
@@ -202,21 +207,15 @@ def edit_file(newconfig):
                                                    name_of_repo)
         content = newconfig['content']
 
-    # the device_config is a dict but we need a yaml
-    yaml_config_context = yaml.dump(content,
-                                    allow_unicode=True,
-                                    default_flow_style=False)
-
-    # write yaml to to disk
-    with open(cc_file_name, "w") as cc_file:
-        cc_file.write("---\n")
-        cc_file.write(yaml_config_context)
-        cc_file.close()
+    # write content to to disk
+    with open(content_filename, "w") as filehandler:
+        filehandler.write(content)
+        filehandler.close()
 
     # add file to git
     # even the file exists before writing the new config to the local
     # file leads to the situation that the file must be added to our repo
-    repo.index.add(cc_file_name)
+    repo.index.add(content_filename)
 
     # commit changes
     repo.index.commit(comment)
