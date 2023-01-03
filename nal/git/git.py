@@ -180,7 +180,7 @@ def edit_file(newconfig):
     # we need the name of the current branch to push the update later
     current_branch = repo.active_branch.name
 
-    content_filename = "%s/%s/devices/%s" % (local_git_path, subdir, filename)
+    content_filename = "%s/%s/%s" % (local_git_path, subdir, filename)
     # check if file exists
     if os.path.isfile(content_filename):
         comment = "updated %s in %s" % (filename, name_of_repo)
