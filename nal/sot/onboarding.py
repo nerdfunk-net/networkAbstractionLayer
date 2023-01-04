@@ -31,7 +31,7 @@ def add_site(name, slug, status):
         return {'success': False, 'error': 'got exception %s' % exc}
 
 
-def add_device(name, site, role, devicetype, manufacturer, platform, status='active'):
+def add_device(name, site, role, devicetype, manufacturer, platform, serial_number=None, status='active'):
 
     """
     add device to nautobot
@@ -43,6 +43,7 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
         devicetype:
         manufacturer:
         platform:
+        serial_number:
         status:
 
     Returns:
@@ -93,6 +94,7 @@ def add_device(name, site, role, devicetype, manufacturer, platform, status='act
                 site=nb_site.id,
                 device_role=nb_role.id,
                 device_type=nb_devicetype.id,
+                serial=serial_number,
                 status=status,
                 )
 
@@ -452,13 +454,19 @@ def update_device_values(name, newconfig):
 
         if nb_ipadd is None:
             # unknown IP. Let's add it and assign it to device
+            interface = nb.dcim.interfaces.get(
+                device=nb_device,
+                name=newconfig["interface"])
+
+            if interface is None:
+                return {'success': False,
+                        'error': 'unknown interface %s' % newconfig["interface"]}
+
             nb_ipadd = nb.ipam.ip_addresses.create(
                 address=newconfig['primary_ip4'],
                 status='active',
                 assigned_object_type="dcim.interface",
-                assigned_object_id=nb.dcim.interfaces.get(
-                    device=nb_device,
-                    name=newconfig["interface"]).id
+                assigned_object_id=interface.id
             )
         nb_device.primary_ip4 = nb_ipadd.id
 

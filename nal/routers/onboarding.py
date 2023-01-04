@@ -27,6 +27,7 @@ class AddDeviceModel(BaseModel):
     platform: Optional[str]
     status: str
     config: Optional[str]
+    serial_number: str
 
 
 class AddInterfaceModel(BaseModel):
@@ -125,6 +126,7 @@ async def add_device_to_sot(config: AddDeviceModel):
         config.devicetype,
         config.manufacturer,
         config.platform,
+        config.serial_number,
         config.status)
 
     return result
