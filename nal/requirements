@@ -1,3 +1,8 @@
 nornir
 nornir-nautobot
 nornir-scrapli
+fastapi
+uvicorn
+pynautobot
+gitpython
+logger

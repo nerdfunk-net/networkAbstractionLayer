@@ -349,9 +349,9 @@ def update_interface_values(name, interface, newconfig):
         vlans = newconfig['tagged'].split(",")
         tagged = []
         for vlan in vlans:
-            (tv, success) = get_vlan(nb, vlan, newconfig['site'])
-            if success and tv is not None:
-                tagged.append(tv)
+            (tagged_vlan, success) = get_vlan(nb, vlan, newconfig['site'])
+            if success and tagged_vlan is not None:
+                tagged.append(tagged_vlan)
             else:
                 return {'success': False,
                         'error': 'unknown tagged vlan %s' % vlan}
@@ -705,8 +705,8 @@ def get_vlan(nb, vid, site=""):
 
     if len(site) > 0:
         # site specific VLAN
-        if nb.dcim.sites.get(slug=site) == None:
-            return (None, False)
+        if nb.dcim.sites.get(slug=site) is None:
+            return None, False
         else:
             site_id = nb.dcim.sites.get(slug=site).id
             nb_vlan = nb.ipam.vlans.get(
@@ -719,7 +719,7 @@ def get_vlan(nb, vid, site=""):
             vid=vid,
         )
 
-    return (nb_vlan, True)
+    return nb_vlan, True
 
 #
 # def update_device_json(name, newconfig):

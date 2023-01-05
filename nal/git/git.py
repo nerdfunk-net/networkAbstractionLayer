@@ -202,6 +202,9 @@ def edit_file(newconfig):
     else:
         # it is a new file, set id to 0
         id = 0
+        comment = "%s in %s/%s added to sot" % (filename,
+                                                current_branch,
+                                                name_of_repo)
         logmessage = "%s in %s/%s added to sot" % (filename,
                                                    current_branch,
                                                    name_of_repo)
