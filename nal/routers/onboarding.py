@@ -18,6 +18,15 @@ class AddSiteModel(BaseModel):
     status: str
 
 
+class AddPlatformModelModel(BaseModel):
+    name: str
+    slug: str
+    description: Optional[str] = ''
+    manufacturer: Optional[str] = ''
+    napalm_driver: Optional[str] = ''
+    napalm_args: Optional[str] = ''
+
+
 class AddDeviceModel(BaseModel):
     name: str
     site: str
@@ -28,6 +37,12 @@ class AddDeviceModel(BaseModel):
     status: str
     config: Optional[str]
     serial_number: str
+
+
+class AddDevicetypeModel(BaseModel):
+    model: str
+    slug: str
+    manufacturer: str
 
 
 class AddInterfaceModel(BaseModel):
@@ -53,15 +68,6 @@ class AddAddressModel(BaseModel):
     name: str
     interface: str
     address: str
-
-
-class AddPlatformModelModel(BaseModel):
-    name: str
-    slug: str
-    description: Optional[str] = ''
-    manufacturer: Optional[str] = ''
-    napalm_driver: Optional[str] = ''
-    napalm_args: Optional[str] = ''
 
 
 class NameAndSlugModel(BaseModel):
@@ -105,6 +111,7 @@ class SwitchBranchModel(BaseModel):
 class SimpleConfigModel(BaseModel):
     config: dict
 
+
 @router.post("/addsite", tags=["onboarding"])
 async def add_site_to_sot(config: AddSiteModel):
 
@@ -115,6 +122,37 @@ async def add_site_to_sot(config: AddSiteModel):
 
     return result
 
+
+@router.post("/addmanufacturer", tags=["onboarding"])
+async def add_manufacturer_to_sot(config: NameAndSlugModel):
+    result = onboarding.add_manufacturer(
+        config.name,
+        config.slug)
+
+    return result
+
+
+@router.post("/addplatform", tags=["onboarding"])
+async def add_platform_to_sot(config: AddPlatformModelModel):
+    result = onboarding.add_platform(
+        config.name,
+        config.slug,
+        config.description,
+        config.manufacturer,
+        config.napalm_driver,
+        config.napalm_args)
+
+    return result
+
+
+@router.post("/adddevicetype", tags=["onboarding"])
+async def add_devicetypeto_sot(config: AddDevicetypeModel):
+    result = onboarding.add_devicetype(
+        config.model,
+        config.slug,
+        config.manufacturer)
+
+    return result
 
 @router.post("/adddevice", tags=["onboarding"])
 async def add_device_to_sot(config: AddDeviceModel):
@@ -164,28 +202,6 @@ async def add_vlan_to_sot(config: AddVlanModel):
         config.name,
         config.status,
         config.site)
-
-    return result
-
-
-@router.post("/addmanufacturer", tags=["onboarding"])
-async def add_manufacturer_to_sot(config: NameAndSlugModel):
-    result = onboarding.add_manufacturer(
-        config.name,
-        config.slug)
-
-    return result
-
-
-@router.post("/addplatform", tags=["onboarding"])
-async def add_platform_to_sot(config: AddPlatformModelModel):
-    result = onboarding.add_platform(
-        config.name,
-        config.slug,
-        config.description,
-        config.manufacturer,
-        config.napalm_driver,
-        config.napalm_args)
 
     return result
 

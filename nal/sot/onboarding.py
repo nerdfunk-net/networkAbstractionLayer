@@ -31,6 +31,96 @@ def add_site(name, slug, status):
         return {'success': False, 'error': 'got exception %s' % exc}
 
 
+def add_manufacturer(name, slug):
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
+    if nb_manufacturer:
+        return {'success': False,
+                'id': 1,
+                'log': 'manufacturer %s already in sot' % name}
+
+    try:
+        nb_manufacturer = nb.dcim.manufacturers.create(
+            name=name,
+            slug=slug,
+        )
+        return {'success': True,
+                'id': 0,
+                'message': 'manufacturer added to sot' % name}
+    except Exception as exc:
+        return {'success': False,
+                'error': 'got exception %s' % exc}
+
+
+def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm_args=""):
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_platform = nb.dcim.platforms.get(slug=slug)
+    if nb_platform:
+        return {'success': True,
+                'id': 1,
+                'log': 'platform %s already in sot' % name}
+
+    manufacturer_id = None
+    if len(manufacturer) > 0:
+        nb_manufacturer = nb.dcim.manufacturers.get(slug=manufacturer)
+        if nb_manufacturer is None:
+            return {'success': False,
+                    'error': 'manufacturer %s is not in sot' % manufacturer}
+        manufacturer_id = nb_manufacturer.id
+
+    try:
+        nb_platform = nb.dcim.platforms.create(
+            name=name,
+            slug=slug,
+            description=description,
+            manufacturer=manufacturer_id,
+            napalm_driver=napalm_driver,
+            napalm_args=napalm_args
+        )
+        return {'success': True,
+                'id': 0,
+                'log': 'platform %s added to sot' % name}
+    except Exception as exc:
+        return {'success': False,
+                'error': 'got exception %s' % exc}
+
+
+def add_devicetype(nodel, slug, manufacturer):
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    nb_devicetype = nb.dcim.device_types.get(slug=slug)
+    if nb_devicetype:
+        return {'success': True,
+                'id': 1,
+                'log': 'devicetype %s already in sot' % nodel}
+
+    nb_manufacturer = nb.dcim.manufacturers.get(slug=manufacturer)
+    if nb_manufacturer is None:
+        return {'success': False,
+                'error': 'manufacturer %s is not in sot' % manufacturer}
+
+    try:
+        nb_devicetype = nb.dcim.device_types.create(
+            model=nodel,
+            slug=slug,
+            manufacturer=nb_manufacturer.id
+        )
+        return {'success': True,
+                'id': 0,
+                'log': 'devicetype %s added to sot' % nodel}
+    except Exception as exc:
+        return {'success': False,
+                'error': 'got exception %s' % exc}
+
+
 def add_device(name, site, role, devicetype, manufacturer, platform, serial_number=None, status='active'):
 
     """
@@ -69,7 +159,7 @@ def add_device(name, site, role, devicetype, manufacturer, platform, serial_numb
                     'error': 'unknown role %s' % role}
 
         # check device type
-        nb_devicetype = nb.dcim.device_types.get(slug=devicetype)
+        nb_devicetype = nb.dcim.device_types.get(slug=devicetype.lower())
         if nb_devicetype is None:
             return {'success': False,
                     'error': 'unknown type %s' % devicetype}
@@ -245,66 +335,6 @@ def add_vlan(vid, name, status, site):
                 'log': 'vlan already in sot'}
 
 
-def add_manufacturer(name, slug):
-
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
-    if nb_manufacturer:
-        return {'success': False,
-                'id': 1,
-                'log': 'manufacturer %s already in sot' % name}
-
-    try:
-        nb_manufacturer = nb.dcim.manufacturers.create(
-            name=name,
-            slug=slug,
-        )
-        return {'success': True,
-                'id': 0,
-                'message': 'manufacturer added to sot' % name}
-    except Exception as exc:
-        return {'success': False,
-                'error': 'got exception %s' % exc}
-
-
-def add_platform(name, slug, description, manufacturer, napalm_driver="", napalm_args=""):
-
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    nb_platform = nb.dcim.platforms.get(slug=slug)
-    if nb_platform:
-        return {'success': True,
-                'id': 1,
-                'log': 'platform %s already in sot' % name}
-
-    manufacturer_id = None
-    if len(manufacturer) > 0:
-        nb_manufacturer = nb.dcim.manufacturers.get(slug=slug)
-        if nb_manufacturer is None:
-            return {'success': False,
-                    'error': 'manufacturer %s is not in sot' % manufacturer}
-        manufacturer_id = nb_manufacturer.id
-
-    try:
-        nb_platform = nb.dcim.platforms.create(
-            name=name,
-            slug=slug,
-            description=description,
-            manufacturer=manufacturer_id,
-            napalm_driver=napalm_driver,
-            napalm_args=napalm_args
-        )
-        return {'success': True,
-                'id': 0,
-                'log': 'platform %s added to sot' % name}
-    except Exception as exc:
-        return {'success': False,
-                'error': 'got exception %s' % exc}
-
-
 def update_interface_values(name, interface, newconfig):
 
     config = helper.read_config()
@@ -331,6 +361,9 @@ def update_interface_values(name, interface, newconfig):
             device_id=nb_device.id,
             name=newconfig['lag']
         )
+        if lag_interface is None:
+            return {'success': False,
+                    'error': 'unknown interface %s' % newconfig['lag']}
         # now set LAG interface
         interface.lag = lag_interface
 

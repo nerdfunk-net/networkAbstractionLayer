@@ -165,6 +165,9 @@ def edit_file(newconfig):
     if subdir is None:
         subdir = "/"
 
+    if 'subdir' in newconfig:
+        subdir += "/%s" % newconfig['subdir']
+
     # pull: True => do pull before writing context
     pull = newconfig.get('pull')
 
@@ -181,6 +184,7 @@ def edit_file(newconfig):
     current_branch = repo.active_branch.name
 
     content_filename = "%s/%s/%s" % (local_git_path, subdir, filename)
+    print(content_filename)
     # check if file exists
     if os.path.isfile(content_filename):
         comment = "updated %s in %s" % (filename, name_of_repo)
