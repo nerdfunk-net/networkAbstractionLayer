@@ -170,6 +170,16 @@ async def add_device_to_sot(config: AddDeviceModel):
     return result
 
 
+@router.post("/device", tags=["onboarding"])
+async def add_or_update_device(config: NameAndConfigModel):
+
+    result = onboarding.add_or_update_device(
+        config.name,
+        config.config)
+
+    return result
+
+
 @router.post("/addinterface", tags=["onboarding"])
 async def add_device_to_sot(config: AddInterfaceModel):
 
