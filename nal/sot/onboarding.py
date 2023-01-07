@@ -236,11 +236,11 @@ def add_device(name, site, role, device_type, manufacturer, platform, serial_num
                 'log': 'device already in sot'}
 
 
-def add_interface(name, interface, interfacetype, enabled=True, description="None"):
+def add_interface(device, interface, interfacetype, enabled=True, description="None"):
     """
 
     Args:
-        name: name of device
+        device: name of device
         interface: name of interface
         interfacetype: interface type eg. Loopback
         enabled: shutdown or not
@@ -253,10 +253,10 @@ def add_interface(name, interface, interfacetype, enabled=True, description="Non
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
 
     # get device id
-    nb_device = nb.dcim.devices.get(name=name)
+    nb_device = nb.dcim.devices.get(name=device)
     if not nb_device:
         return {'success': False,
-                'error': 'unknown device'}
+                'error': 'unknown device %s' % device}
 
     # check if interface is already part of device
     nb_interface = nb.dcim.interfaces.get(
@@ -371,17 +371,17 @@ def add_vlan(vid, name, status, site):
                 'log': 'vlan already in sot'}
 
 
-def update_device_values(name, newconfig):
+def update_device_values(device, newconfig):
 
     config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     values = ', '.join(map(str, newconfig.values()))
 
     # get device
-    nb_device = nb.dcim.devices.get(name=name)
+    nb_device = nb.dcim.devices.get(name=device)
     if not nb_device:
         return {'success': False,
-                'error': 'unknown device %s' % name}
+                'error': 'unknown device %s' % device}
 
     if 'name' in newconfig:
         nb_device.name = newconfig['name']
@@ -435,19 +435,41 @@ def update_device_values(name, newconfig):
         nb_device.platform = nb_platform.id
 
     if 'primary_ip4' in newconfig:
-        nb_ipadd = nb.ipam.ip_addresses.get(
-            address=newconfig['primary_ip4']
-        )
+        # an interface can have multiple interface and it is possible that
+        # the ip address can be found more than once in the sot with different
+        # netmasks eg. 192.168.0.1/32 and 192.168.0.1/24
+        # in most cases this "duplicate address" is a misconfiguration but
+        # we have to deal with it.
+        multiple_ip = False
+        nb_ipadd = None
+        try:
+            nb_ipadd = nb.ipam.ip_addresses.get(
+                address=newconfig['primary_ip4']
+            )
+        except Exception as exc:
+            multiple_ip = True
 
-        if nb_ipadd is None:
+        if nb_ipadd is None and not multiple_ip:
             # unknown IP. Let's add it and assign it to device
             interface = nb.dcim.interfaces.get(
                 device=nb_device,
                 name=newconfig["interface"])
 
             if interface is None:
-                return {'success': False,
-                        'error': 'unknown interface %s' % newconfig["interface"]}
+                # we create the interface on that the IP address is configured
+                response = add_interface(device,
+                                         newconfig["interface"],
+                                         newconfig["interface_type"],
+                                         enabled=True,
+                                         description=newconfig["description"])
+                if not response['success']:
+                    return {'success': False,
+                            'error': 'unknown interface %s and could not add it to sot' % newconfig["interface"]}
+
+            # now the interface exists. Get it
+            interface = nb.dcim.interfaces.get(
+                device=nb_device,
+                name=newconfig["interface"])
 
             nb_ipadd = nb.ipam.ip_addresses.create(
                 address=newconfig['primary_ip4'],
@@ -455,6 +477,11 @@ def update_device_values(name, newconfig):
                 assigned_object_type="dcim.interface",
                 assigned_object_id=interface.id
             )
+
+        if multiple_ip:
+            return {'success': False,
+                    'error': 'duplicate IP Address %s. Check your configuration' % newconfig["primary_ip4"]}
+
         nb_device.primary_ip4 = nb_ipadd.id
 
     if 'comments' in newconfig:
