@@ -49,7 +49,7 @@ class AddInterfaceModel(BaseModel):
     # mandatory
     name: str
     interface: str
-    interfacetype: str
+    interface_type: str
     # optional
     enabled: Optional[bool] = True
     description: Optional[str] = ''
@@ -154,6 +154,17 @@ async def add_devicetypeto_sot(config: AddDevicetypeModel):
 
     return result
 
+
+@router.post("/device", tags=["onboarding"])
+async def add_or_update_device(config: NameAndConfigModel):
+
+    result = onboarding.add_or_update_device(
+        config.name,
+        config.config)
+
+    return result
+
+
 @router.post("/adddevice", tags=["onboarding"])
 async def add_device_to_sot(config: AddDeviceModel):
 
@@ -170,10 +181,20 @@ async def add_device_to_sot(config: AddDeviceModel):
     return result
 
 
-@router.post("/device", tags=["onboarding"])
-async def add_or_update_device(config: NameAndConfigModel):
+@router.post("/updatedevice", tags=["onboarding"])
+async def update_interface(config: NameAndConfigModel):
 
-    result = onboarding.add_or_update_device(
+    result = onboarding.update_device_values(
+        config.name,
+        config.config
+    )
+    return result
+
+
+@router.post("/interface", tags=["onboarding"])
+async def add_or_update_interface(config: NameAndConfigModel):
+
+    result = onboarding.add_or_update_interface(
         config.name,
         config.config)
 
@@ -186,11 +207,22 @@ async def add_device_to_sot(config: AddInterfaceModel):
     result = onboarding.add_interface(
         config.name,
         config.interface,
-        config.interfacetype,
+        config.interface_type,
         config.enabled,
         config.description
     )
 
+    return result
+
+
+@router.post("/updateinterface", tags=["onboarding"])
+async def update_interface(config: UpdateInterfaceModel):
+
+    result = onboarding.update_interface_values(
+        config.name,
+        config.interface,
+        config.config
+    )
     return result
 
 
@@ -226,30 +258,9 @@ async def update_primary_address(config: UpdatePrimaryModel):
     return result
 
 
-@router.post("/updateinterface", tags=["onboarding"])
-async def update_interface(config: UpdateInterfaceModel):
-
-    result = onboarding.update_interface_values(
-        config.name,
-        config.interface,
-        config.config
-    )
-    return result
-
-
 @router.post("/updateconnection", tags=["onboarding"])
 async def update_connection(config: NameAndConfigModel):
     result = onboarding.update_connection_values(
-        config.config
-    )
-    return result
-
-
-@router.post("/updatedevice", tags=["onboarding"])
-async def update_interface(config: NameAndConfigModel):
-
-    result = onboarding.update_device_values(
-        config.name,
         config.config
     )
     return result

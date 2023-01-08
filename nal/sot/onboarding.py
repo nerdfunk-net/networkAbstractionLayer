@@ -236,141 +236,6 @@ def add_device(name, site, role, device_type, manufacturer, platform, serial_num
                 'log': 'device already in sot'}
 
 
-def add_interface(device, interface, interfacetype, enabled=True, description="None"):
-    """
-
-    Args:
-        device: name of device
-        interface: name of interface
-        interfacetype: interface type eg. Loopback
-        enabled: shutdown or not
-        description: description
-
-    Returns:
-        json containing result
-    """
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    # get device id
-    nb_device = nb.dcim.devices.get(name=device)
-    if not nb_device:
-        return {'success': False,
-                'error': 'unknown device %s' % device}
-
-    # check if interface is already part of device
-    nb_interface = nb.dcim.interfaces.get(
-        device_id=nb_device.id,
-        name=interface
-    )
-
-    # add interface
-    if not nb_interface:
-        try:
-            nb_interface = nb.dcim.interfaces.create(
-                device=nb_device.id,
-                name=interface,
-                description=description,
-                type=interfacetype,
-                enabled=enabled
-            )
-            return {'success': True,
-                    'id': 0,
-                    'log': 'interface %s added to sot' % interface}
-        except Exception as exc:
-            return {'success': False,
-                    'error': 'got exception %s' % exc}
-    else:
-        return {'success': True,
-                'id': 1,
-                'log': 'interface already in sot'}
-
-
-def add_address(name, interface, address):
-
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    # get device id
-    nb_device = nb.dcim.devices.get(name=name)
-    if not nb_device:
-        return {'success': False,
-                'error': 'unknown device %s' % name}
-
-    # get ip address
-    nb_ipadd = nb.ipam.ip_addresses.get(
-        address=address
-    )
-    if nb_ipadd:
-        return {'success': True,
-                'id': 1,
-                'log': 'ip address already in sot'}
-
-    # check if interface is known
-    nb_interface = nb.dcim.interfaces.get(
-        device_id=nb_device.id,
-        name=interface
-    )
-
-    # if it is a new address add it
-    if nb_interface:
-        try:
-            nb_ipadd = nb.ipam.ip_addresses.create(
-                address=address,
-                status='Active',
-                assigned_object_type="dcim.interface",
-                assigned_object_id=nb.dcim.interfaces.get(
-                    device=name,
-                    name=interface).id
-            )
-            return {'success': True,
-                    'id': 0,
-                    'log': 'address %s added to sot' % address}
-        except Exception as exc:
-            return {'success': False,
-                    'error': 'got exception %s' % exc}
-    else:
-        return {'success': False,
-                'error': 'unknown interface %s' % interface}
-
-
-def add_vlan(vid, name, status, site):
-
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-
-    (nb_vlan, success) = get_vlan(nb, vid, site)
-    if not success:
-        return {'success': False,
-                'error': 'unknown site %s' % site}
-
-    if not nb_vlan:
-        try:
-            if site is None:
-                nb_vlan = nb.ipam.vlans.create(
-                    name=name,
-                    vid=vid,
-                    status=status
-                )
-            else:
-                nb_vlan = nb.ipam.vlans.create(
-                    site=nb.dcim.sites.get(slug=site).id,
-                    name=name,
-                    vid=vid,
-                    status=status
-                )
-            return {'success': True,
-                    'id': 0,
-                    'log': 'vlan %s/%s added to sot' % (name, vid)}
-        except Exception as exc:
-            return {'success': False,
-                    'error': 'got exception %s' % exc}
-    else:
-        return {'success': True,
-                'id': 1,
-                'log': 'vlan already in sot'}
-
-
 def update_device_values(device, newconfig):
 
     config = helper.read_config()
@@ -513,11 +378,114 @@ def update_device_values(device, newconfig):
                 'log': 'no changes made to device'}
 
 
+def add_or_update_interface(device, newconfig):
+    """
+
+    Args:
+        name:
+        newconfig:
+
+    Returns:
+
+    """
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    # get device
+    nb_device = nb.dcim.devices.get(name=device)
+    # check if device is in sot
+    if not nb_device:
+        return {'success': False,
+                'error': 'unknown device %s' % device}
+
+    # check if interface is already part of device
+    nb_interface = nb.dcim.interfaces.get(
+        device_id=nb_device.id,
+        name=newconfig['interface']
+    )
+
+    if not nb_interface:
+        return add_interface(device,
+                             newconfig['interface'],
+                             newconfig['interface_type'],
+                             newconfig['enabled'],
+                             newconfig['description']
+                             )
+    else:
+        return update_interface_values(device,
+                                       newconfig['interface'],
+                                       newconfig)
+
+
+def add_interface(device, interface, interface_type, enabled=True, description="None"):
+    """
+
+    Args:
+        device: name of device
+        interface: name of interface
+        interface_type: interface type eg. Loopback
+        enabled: shutdown or not
+        description: description
+
+    Returns:
+        json containing result
+    """
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    # get device id
+    nb_device = nb.dcim.devices.get(name=device)
+    if not nb_device:
+        return {'success': False,
+                'error': 'unknown device %s' % device}
+
+    # check if interface is already part of device
+    nb_interface = nb.dcim.interfaces.get(
+        device_id=nb_device.id,
+        name=interface
+    )
+
+    # add interface
+    if not nb_interface:
+        try:
+            nb_interface = nb.dcim.interfaces.create(
+                device=nb_device.id,
+                name=interface,
+                description=description,
+                type=interface_type,
+                enabled=enabled
+            )
+            return {'success': True,
+                    'id': 0,
+                    'log': 'interface %s added to sot' % interface}
+        except Exception as exc:
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
+    else:
+        return {'success': True,
+                'id': 1,
+                'log': 'interface already in sot'}
+
+
 def update_interface_values(name, interface, newconfig):
+    """
+
+    Args:
+        name: name of the device
+        interface: name of the interface
+        newconfig: newconfig
+
+    Returns:
+        result of update
+    """
 
     config = helper.read_config()
     nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
     values = ', '.join(map(str, newconfig.values()))
+
+    print(newconfig)
 
     # get device
     nb_device = nb.dcim.devices.get(name=name)
@@ -533,6 +501,9 @@ def update_interface_values(name, interface, newconfig):
     if interface is None:
         return {'success': False,
                 'error': 'unknown interface %s' % interface}
+
+    if 'description' in newconfig:
+        interface.description = newconfig['description']
 
     if 'lag' in newconfig:
         lag_interface = nb.dcim.interfaces.get(
@@ -593,6 +564,91 @@ def update_interface_values(name, interface, newconfig):
         return {'success': True,
                 'id': 3,
                 'error': 'no changes made on interface'}
+
+
+def add_address(name, interface, address):
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    # get device id
+    nb_device = nb.dcim.devices.get(name=name)
+    if not nb_device:
+        return {'success': False,
+                'error': 'unknown device %s' % name}
+
+    # get ip address
+    nb_ipadd = nb.ipam.ip_addresses.get(
+        address=address
+    )
+    if nb_ipadd:
+        return {'success': True,
+                'id': 1,
+                'log': 'ip address already in sot'}
+
+    # check if interface is known
+    nb_interface = nb.dcim.interfaces.get(
+        device_id=nb_device.id,
+        name=interface
+    )
+
+    # if it is a new address add it
+    if nb_interface:
+        try:
+            nb_ipadd = nb.ipam.ip_addresses.create(
+                address=address,
+                status='Active',
+                assigned_object_type="dcim.interface",
+                assigned_object_id=nb.dcim.interfaces.get(
+                    device=name,
+                    name=interface).id
+            )
+            return {'success': True,
+                    'id': 0,
+                    'log': 'address %s added to sot' % address}
+        except Exception as exc:
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
+    else:
+        return {'success': False,
+                'error': 'unknown interface %s' % interface}
+
+
+def add_vlan(vid, name, status, site):
+
+    config = helper.read_config()
+    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+
+    (nb_vlan, success) = get_vlan(nb, vid, site)
+    if not success:
+        return {'success': False,
+                'error': 'unknown site %s' % site}
+
+    if not nb_vlan:
+        try:
+            if site is None:
+                nb_vlan = nb.ipam.vlans.create(
+                    name=name,
+                    vid=vid,
+                    status=status
+                )
+            else:
+                nb_vlan = nb.ipam.vlans.create(
+                    site=nb.dcim.sites.get(slug=site).id,
+                    name=name,
+                    vid=vid,
+                    status=status
+                )
+            return {'success': True,
+                    'id': 0,
+                    'log': 'vlan %s/%s added to sot' % (name, vid)}
+        except Exception as exc:
+            return {'success': False,
+                    'error': 'got exception %s' % exc}
+    else:
+        return {'success': True,
+                'id': 1,
+                'log': 'vlan already in sot'}
 
 
 def update_site_values(slug, newconfig):
