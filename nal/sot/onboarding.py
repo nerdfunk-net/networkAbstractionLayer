@@ -151,13 +151,15 @@ def add_or_update_device(name, newconfig):
                           newconfig['manufacturer'],
                           newconfig['platform'],
                           newconfig['serial_number'],
-                          newconfig['status']
+                          newconfig['status'],
+                          config,
+                          nb
                           )
     else:
-        return update_device_values(name, newconfig)
+        return update_device_values(name, newconfig, config, nb)
 
 
-def add_device(name, site, role, device_type, manufacturer, platform, serial_number="", status='active'):
+def add_device(name, site, role, device_type, manufacturer, platform, serial_number="", status='active', config=None, nb=None):
 
     """
     add device to nautobot
@@ -171,13 +173,17 @@ def add_device(name, site, role, device_type, manufacturer, platform, serial_num
         platform:
         serial_number:
         status:
+        config:
+        nb
 
     Returns:
         result with success (true, false) and error if success: false
     """
 
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    if nb is None:
+        config = helper.read_config()
+        nb = api(url=config['nautobot']['url'],
+                 token=config['nautobot']['token'])
 
     # first check if the device is already present
     nb_device = nb.dcim.devices.get(name=name)
@@ -236,10 +242,13 @@ def add_device(name, site, role, device_type, manufacturer, platform, serial_num
                 'log': 'device already in sot'}
 
 
-def update_device_values(device, newconfig):
+def update_device_values(device, newconfig, config=None, nb=None):
 
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    if nb is None:
+        config = helper.read_config()
+        nb = api(url=config['nautobot']['url'],
+                 token=config['nautobot']['token'])
+
     values = ', '.join(map(str, newconfig.values()))
 
     # get device
@@ -410,15 +419,19 @@ def add_or_update_interface(device, newconfig):
                              newconfig['interface'],
                              newconfig['interface_type'],
                              newconfig['enabled'],
-                             newconfig['description']
+                             newconfig['description'],
+                             config,
+                             nb
                              )
     else:
         return update_interface_values(device,
                                        newconfig['interface'],
-                                       newconfig)
+                                       newconfig,
+                                       config,
+                                       nb)
 
 
-def add_interface(device, interface, interface_type, enabled=True, description="None"):
+def add_interface(device, interface, interface_type, enabled=True, description="None", config=None, nb=None):
     """
 
     Args:
@@ -432,8 +445,10 @@ def add_interface(device, interface, interface_type, enabled=True, description="
         json containing result
     """
 
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
+    if nb is None:
+        config = helper.read_config()
+        nb = api(url=config['nautobot']['url'],
+                 token=config['nautobot']['token'])
 
     # get device id
     nb_device = nb.dcim.devices.get(name=device)
@@ -469,7 +484,7 @@ def add_interface(device, interface, interface_type, enabled=True, description="
                 'log': 'interface already in sot'}
 
 
-def update_interface_values(name, interface, newconfig):
+def update_interface_values(name, interface, newconfig, config=None, nb=None):
     """
 
     Args:
@@ -481,11 +496,12 @@ def update_interface_values(name, interface, newconfig):
         result of update
     """
 
-    config = helper.read_config()
-    nb = api(url=config['nautobot']['url'], token=config['nautobot']['token'])
-    values = ', '.join(map(str, newconfig.values()))
+    if nb is None:
+        config = helper.read_config()
+        nb = api(url=config['nautobot']['url'],
+                 token=config['nautobot']['token'])
 
-    print(newconfig)
+    values = ', '.join(map(str, newconfig.values()))
 
     # get device
     nb_device = nb.dcim.devices.get(name=name)

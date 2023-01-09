@@ -184,7 +184,6 @@ def edit_file(newconfig):
     current_branch = repo.active_branch.name
 
     content_filename = "%s/%s/%s" % (local_git_path, subdir, filename)
-    print(content_filename)
     # check if file exists
     if os.path.isfile(content_filename):
         comment = "updated %s in %s" % (filename, name_of_repo)
@@ -226,12 +225,11 @@ def edit_file(newconfig):
 
     # commit changes
     repo.index.commit(comment)
-    try:
-        print("pushing updates to %s" % current_branch)
-        repo.remotes.origin.push(refspec=current_branch)
-    except Exception as exc:
-        return {'success': False,
-                'error': 'got exception %s' % exc}
+    # try:
+    #     repo.remotes.origin.push(refspec=current_branch)
+    # except Exception as exc:
+    #     return {'success': False,
+    #             'error': 'got exception %s' % exc}
 
     return {'success': True,
             'id': id,
