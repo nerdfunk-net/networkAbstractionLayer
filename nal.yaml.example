@@ -137,10 +137,9 @@ git:
     config_backup:
         username: your@email
         token: "your_git_token"
-        repo: "https://github.com/your_repo/config_contexts.git"
-        local_gitdir: "/path/to/your/sot_data/config_contexts"
+        repo: "https://github.com/your_repo/config_backup.git"
+        local_gitdir: "/path/to/your/sot_data/config_backups"
         local_content: "config_backups"
-
 templates:
     directory: "../sot_data/templates/"
     trim_blocks: True
